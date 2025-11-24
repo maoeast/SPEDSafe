@@ -25,5 +25,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getMachineId: () => ipcRenderer.invoke('get-machine-id'),
     verifyLicense: (licenseKey) => ipcRenderer.invoke('verify-license', licenseKey),
     getActivationStatus: () => ipcRenderer.invoke('get-activation-status'),
-    resetActivation: () => ipcRenderer.invoke('reset-activation')
+    resetActivation: () => ipcRenderer.invoke('reset-activation'),
+
+    // 应用配置API
+    getAppConfig: () => ipcRenderer.invoke('get-app-config'),
+    updateAppConfig: (config) => ipcRenderer.invoke('update-app-config', config),
+    uploadLogo: (imageData) => ipcRenderer.invoke('upload-logo', imageData),
+    resetLogo: () => ipcRenderer.invoke('reset-logo'),
+    verifyAdminPassword: (password) => ipcRenderer.invoke('verify-admin-password', password)
 });

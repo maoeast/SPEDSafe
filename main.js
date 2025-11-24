@@ -19,6 +19,20 @@ const learningStore = new Store({
     }
 });
 
+// 初始化应用配置存储
+const appConfigStore = new Store({
+    name: 'app-config',
+    defaults: {
+        appTitle: '特教安全教育资源仪',
+        logoPath: 'logo.png',  // 相对于 userData 目录
+        titleStyle: {
+            fontSize: '36px',
+            color: 'white'
+        },
+        headerBackground: 'linear-gradient(135deg, #f6d365 0%, #fda085 50%, #6dd5ed 100%)'
+    }
+});
+
 let mainWindow;
 let h5Server;  // 本地HTTP服务器
 let h5ServerPort = 0;  // 服务器端口
@@ -393,4 +407,96 @@ ipcMain.handle('reset-activation', async () => {
         console.error('重置激活失败:', error);
         return { success: false, message: error.message };
     }
+});
+
+// ===== 应用配置相关IPC处理 =====
+
+// 获取应用配置
+ipcMain.handle('get-app-config', async () => {
+    try {
+        const config = {
+            appTitle: appConfigStore.get('appTitle'),
+            logoPath: appConfigStore.get('logoPath'),
+            titleStyle: appConfigStore.get('titleStyle'),
+            headerBackground: appConfigStore.get('headerBackground')
+        };
+
+        // 如果有自定义logo，返回完整路径
+        if (config.logoPath !== 'logo.png') {
+            const logoFullPath = path.join(app.getPath('userData'), config.logoPath);
+            if (fs.existsSync(logoFullPath)) {
+                config.logoFullPath = logoFullPath;
+            }
+        }
+
+        return { success: true, config };
+    } catch (error) {
+        console.error('获取应用配置失败:', error);
+        return { success: false, message: error.message };
+    }
+});
+
+// 更新应用配置
+ipcMain.handle('update-app-config', async (event, config) => {
+    try {
+        if (config.appTitle) {
+            appConfigStore.set('appTitle', config.appTitle);
+        }
+        if (config.titleStyle) {
+            appConfigStore.set('titleStyle', config.titleStyle);
+        }
+        if (config.headerBackground) {
+            appConfigStore.set('headerBackground', config.headerBackground);
+        }
+
+        console.log('✅ 应用配置已更新');
+        return { success: true };
+    } catch (error) {
+        console.error('更新应用配置失败:', error);
+        return { success: false, message: error.message };
+    }
+});
+
+// 上传Logo图片
+ipcMain.handle('upload-logo', async (event, imageData) => {
+    try {
+        const userDataPath = app.getPath('userData');
+        const logoPath = path.join(userDataPath, 'custom-logo.png');
+
+        // 将base64图片数据保存为文件
+        const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+
+        // 检查文件大小（1MB = 1048576 bytes）
+        if (buffer.length > 1048576) {
+            return { success: false, message: '图片大小超过1MB，请选择更小的图片' };
+        }
+
+        fs.writeFileSync(logoPath, buffer);
+        appConfigStore.set('logoPath', 'custom-logo.png');
+
+        console.log('✅ Logo图片已上传:', logoPath);
+        return { success: true, logoPath: logoPath };
+    } catch (error) {
+        console.error('上传Logo失败:', error);
+        return { success: false, message: error.message };
+    }
+});
+
+// 重置为默认Logo
+ipcMain.handle('reset-logo', async () => {
+    try {
+        appConfigStore.set('logoPath', 'logo.png');
+        console.log('✅ Logo已重置为默认');
+        return { success: true };
+    } catch (error) {
+        console.error('重置Logo失败:', error);
+        return { success: false, message: error.message };
+    }
+});
+
+// 验证管理员密码
+ipcMain.handle('verify-admin-password', async (event, password) => {
+    const correctPassword = '299451';
+    return { success: password === correctPassword };
 });

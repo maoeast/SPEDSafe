@@ -21,6 +21,21 @@
       </div>
     </div>
 
+    <!-- 设置弹窗 -->
+    <div
+      v-if="showSettings"
+      class="settings-modal"
+      @click.self="showSettings = false"
+    >
+      <div class="settings-content">
+        <button class="close-btn" @click="showSettings = false">×</button>
+        <AppSettings
+          @close="showSettings = false"
+          @updated="handleSettingsUpdated"
+        />
+      </div>
+    </div>
+
     <!-- 最近学习 + 学习进度 并列显示 -->
     <div class="learning-overview">
       <!-- 最近学习 -->
@@ -111,11 +126,15 @@
       </div>
     </div>
 
-    <!-- 清空记录按钮 -->
-    <div class="clear-section">
+    <!-- 底部操作按钮 -->
+    <div class="action-buttons">
+      <button class="settings-btn" @click="showSettings = true">
+        <span class="btn-icon">⚙️</span>
+        <span class="btn-text">应用设置</span>
+      </button>
       <button class="clear-btn" @click="handleClearRecords">
-        <span class="clear-icon">🗑️</span>
-        <span class="clear-text">清空学习记录</span>
+        <span class="btn-icon">🗑️</span>
+        <span class="btn-text">清空学习记录</span>
       </button>
     </div>
   </div>
@@ -123,6 +142,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import AppSettings from "./AppSettings.vue";
 
 const props = defineProps({
   categories: {
@@ -144,6 +164,12 @@ const statistics = ref({
 });
 
 const records = ref({});
+const showSettings = ref(false);
+
+// 处理设置更新
+const handleSettingsUpdated = () => {
+  showSettings.value = false;
+};
 
 // 加载学习数据
 const loadLearningData = async () => {
@@ -586,12 +612,15 @@ defineExpose({
   color: #ffd700;
 }
 
-/* 清空记录按钮区域 */
-.clear-section {
-  text-align: center;
+/* 底部操作按钮区域 */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
   padding: 40px 20px;
 }
 
+.settings-btn,
 .clear-btn {
   display: inline-flex;
   align-items: center;
@@ -600,11 +629,25 @@ defineExpose({
   font-size: 15px;
   font-weight: 600;
   color: #fff;
-  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
   border: none;
   border-radius: 24px;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.settings-btn {
+  background: linear-gradient(135deg, #52c41a, #73d13d);
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+}
+
+.settings-btn:hover {
+  background: linear-gradient(135deg, #49aa16, #5fb82e);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(82, 196, 26, 0.4);
+}
+
+.clear-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
   box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
 }
 
@@ -614,16 +657,88 @@ defineExpose({
   box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
 }
 
+.settings-btn:active,
 .clear-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
 }
 
-.clear-icon {
+.btn-icon {
   font-size: 18px;
 }
 
-.clear-text {
+.btn-text {
   font-size: 15px;
+}
+
+/* 设置弹窗 */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.settings-content {
+  position: relative;
+  background: white;
+  border-radius: 20px;
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(0, 0, 0, 0.1);
+  color: #666;
+  font-size: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+  color: #333;
+  transform: rotate(90deg);
 }
 </style>
