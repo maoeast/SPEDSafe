@@ -1,5 +1,14 @@
 <template>
   <div class="app-container">
+    <!-- 激活对话框 -->
+    <ActivationDialog
+      :show="showActivationDialog"
+      :activationStatus="activationStatus"
+      @activated="handleActivated"
+      @skip="handleSkipActivation"
+      ref="activationDialogRef"
+    />
+
     <!-- 主页面 -->
     <div v-if="currentView === 'home'" class="home-view">
       <Header
@@ -53,6 +62,7 @@ import CategoryNav from "./components/CategoryNav.vue";
 import ResourceGrid from "./components/ResourceGrid.vue";
 import Player from "./components/Player.vue";
 import LearningDashboard from "./components/LearningDashboard.vue";
+import ActivationDialog from "./components/ActivationDialog.vue";
 
 // 七大分类配置
 const categories = [
@@ -72,6 +82,14 @@ const currentResource = ref(null);
 const loading = ref(false);
 const dashboardRef = ref(null);
 const resourceGridRef = ref(null);
+
+// 保存每个分类的滚动位置
+const scrollPositions = ref({});
+
+// 激活相关
+const showActivationDialog = ref(false);
+const activationStatus = ref({});
+const activationDialogRef = ref(null);
 
 // 过滤后的资源
 const filteredResources = computed(() => {
@@ -93,11 +111,37 @@ const loadResources = async () => {
 
 // 选择分类
 const handleCategorySelect = (categoryId) => {
+  // 保存当前分类的滚动位置
+  if (resourceGridRef.value) {
+    scrollPositions.value[activeCategory.value] =
+      resourceGridRef.value.getScrollPosition();
+  }
+
+  // 切换分类
   activeCategory.value = categoryId;
+
+  // 恢复新分类的滚动位置
+  setTimeout(() => {
+    if (resourceGridRef.value) {
+      const savedPosition = scrollPositions.value[categoryId];
+      if (savedPosition !== undefined) {
+        resourceGridRef.value.setScrollPosition(savedPosition);
+      } else {
+        // 如果没有保存的位置，滚动到顶部
+        resourceGridRef.value.setScrollPosition(0);
+      }
+    }
+  }, 50);
 };
 
 // 播放资源
 const handlePlay = (resourceOrId) => {
+  // 保存当前分类的滚动位置
+  if (resourceGridRef.value) {
+    scrollPositions.value[activeCategory.value] =
+      resourceGridRef.value.getScrollPosition();
+  }
+
   // 如果传入的是字符串ID，则查找对应的资源对象
   if (typeof resourceOrId === "string") {
     const resource = resources.value.find((r) => r.id === resourceOrId);
@@ -143,17 +187,64 @@ const handleBack = () => {
   currentView.value = "home";
   currentResource.value = null;
 
-  // 刷新资源网格数据
+  // 刷新资源网格数据并恢复滚动位置
   setTimeout(() => {
     if (resourceGridRef.value) {
       resourceGridRef.value.loadLearningRecords();
+      // 恢复当前分类的滚动位置
+      const savedPosition = scrollPositions.value[activeCategory.value];
+      if (savedPosition !== undefined) {
+        resourceGridRef.value.setScrollPosition(savedPosition);
+      }
     }
   }, 100);
 };
 
 onMounted(() => {
   loadResources();
+  checkActivationStatus();
 });
+
+// ===== 激活系统 =====
+
+// 检查激活状态
+const checkActivationStatus = async () => {
+  try {
+    const status = await window.electronAPI.getActivationStatus();
+    activationStatus.value = status;
+
+    console.log("🔐 激活状态:", status);
+
+    // 如果未激活且试用期已结束，强制显示激活对话框
+    if (!status.activated && status.type === "trial_expired") {
+      setTimeout(() => {
+        showActivationDialog.value = true;
+      }, 500);
+    }
+    // 如果在试用期，提示但不强制
+    else if (!status.activated && status.type === "trial") {
+      setTimeout(() => {
+        showActivationDialog.value = true;
+      }, 500);
+    }
+  } catch (error) {
+    console.error("检查激活状态失败:", error);
+  }
+};
+
+// 激活成功
+const handleActivated = async (data) => {
+  console.log("✅ 激活成功:", data);
+  showActivationDialog.value = false;
+  // 重新检查激活状态
+  await checkActivationStatus();
+};
+
+// 跳过激活（试用期内）
+const handleSkipActivation = () => {
+  console.log("⏸️ 跳过激活，继续试用");
+  showActivationDialog.value = false;
+};
 </script>
 
 <style scoped>

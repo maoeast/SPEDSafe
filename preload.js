@@ -19,5 +19,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getAllLearningRecords: () => ipcRenderer.invoke('get-all-learning-records'),
     saveLearningRecord: (record) => ipcRenderer.invoke('save-learning-record', record),
     getLearningStatistics: () => ipcRenderer.invoke('get-learning-statistics'),
-    clearLearningRecords: () => ipcRenderer.invoke('clear-learning-records')
+    clearLearningRecords: () => ipcRenderer.invoke('clear-learning-records'),
+
+    // 激活系统API
+    getMachineId: () => ipcRenderer.invoke('get-machine-id'),
+    verifyLicense: (licenseKey) => ipcRenderer.invoke('verify-license', licenseKey),
+    getActivationStatus: () => ipcRenderer.invoke('get-activation-status'),
+    resetActivation: () => ipcRenderer.invoke('reset-activation')
 });

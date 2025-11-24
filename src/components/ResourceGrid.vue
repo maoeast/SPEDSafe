@@ -1,5 +1,5 @@
 <template>
-  <div class="resource-grid-container">
+  <div class="resource-grid-container" ref="containerRef">
     <div class="grid-content">
       <div v-if="resources.length === 0" class="empty-state">
         <div class="empty-icon">📭</div>
@@ -73,6 +73,22 @@ defineProps({
 defineEmits(["play"]);
 
 const learningRecords = ref({});
+const containerRef = ref(null);
+
+// 获取滚动位置
+const getScrollPosition = () => {
+  if (containerRef.value) {
+    return containerRef.value.scrollTop;
+  }
+  return 0;
+};
+
+// 设置滚动位置
+const setScrollPosition = (position) => {
+  if (containerRef.value) {
+    containerRef.value.scrollTop = position;
+  }
+};
 
 // 加载学习记录
 const loadLearningRecords = async () => {
@@ -110,6 +126,8 @@ onMounted(() => {
 // 暴露给父组件调用
 defineExpose({
   loadLearningRecords,
+  getScrollPosition,
+  setScrollPosition,
 });
 </script>
 

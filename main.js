@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const url = require('url');
 const Store = require('electron-store');
+const licenseManager = require('./license-manager');
 
 // 初始化学习记录存储
 const learningStore = new Store({
@@ -237,4 +238,64 @@ ipcMain.handle('clear-learning-records', async () => {
         lastActiveDate: null
     });
     return true;
+});
+
+// ===== 激活系统相关IPC处理 =====
+
+// 获取机器码
+ipcMain.handle('get-machine-id', async () => {
+    try {
+        const machineId = licenseManager.getMachineFingerprint();
+        console.log('📱 机器码:', machineId);
+        return { success: true, machineId };
+    } catch (error) {
+        console.error('获取机器码失败:', error);
+        return { success: false, message: error.message };
+    }
+});
+
+// 验证激活码
+ipcMain.handle('verify-license', async (event, licenseKey) => {
+    try {
+        console.log('🔐 验证激活码...');
+        const result = licenseManager.verifyLicenseKey(licenseKey);
+        console.log('验证结果:', result);
+        return result;
+    } catch (error) {
+        console.error('验证激活码失败:', error);
+        return { success: false, message: '验证失败: ' + error.message };
+    }
+});
+
+// 获取激活状态
+ipcMain.handle('get-activation-status', async () => {
+    try {
+        const status = licenseManager.getActivationStatus();
+        console.log('📊 激活状态:', status.type, status.activated ? '已激活' : '未激活');
+        return status;
+    } catch (error) {
+        console.error('获取激活状态失败:', error);
+        return {
+            activated: false,
+            type: 'error',
+            message: error.message,
+            machineId: licenseManager.getMachineFingerprint()
+        };
+    }
+});
+
+// 重置激活状态（仅用于开发测试）
+ipcMain.handle('reset-activation', async () => {
+    try {
+        if (!app.isPackaged) {
+            const result = licenseManager.resetActivation();
+            console.log('🔄 激活状态已重置（仅开发模式）');
+            return result;
+        } else {
+            return { success: false, message: '生产环境不允许重置激活状态' };
+        }
+    } catch (error) {
+        console.error('重置激活失败:', error);
+        return { success: false, message: error.message };
+    }
 });
