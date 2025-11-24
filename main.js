@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 const url = require('url');
 const Store = require('electron-store');
 const licenseManager = require('./license-manager');
@@ -19,6 +20,86 @@ const learningStore = new Store({
 });
 
 let mainWindow;
+let h5Server;  // 本地HTTP服务器
+let h5ServerPort = 0;  // 服务器端口
+
+// MIME类型映射
+const getMimeType = (filePath) => {
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+        '.html': 'text/html',
+        '.hdat': 'text/html',  // .hdat识别为HTML
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.svg': 'image/svg+xml',
+        '.mp3': 'audio/mpeg',
+        '.wav': 'audio/wav',
+        '.ogg': 'audio/ogg'
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
+};
+
+// 启动本地HTTP服务器（用于H5资源）
+function startH5Server() {
+    const assetsPath = app.isPackaged
+        ? path.join(process.resourcesPath, 'assets')
+        : path.join(__dirname, 'src', 'assets');
+
+    h5Server = http.createServer((req, res) => {
+        try {
+            // 解析URL并移除查询参数
+            const parsedUrl = url.parse(req.url);
+            let filePath = decodeURIComponent(parsedUrl.pathname);
+
+            // 移除开头的斜杠
+            if (filePath.startsWith('/')) {
+                filePath = filePath.substring(1);
+            }
+
+            // 构建完整文件路径
+            const fullPath = path.join(assetsPath, filePath);
+
+            // 检查文件是否存在
+            if (!fs.existsSync(fullPath)) {
+                res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('文件未找到');
+                return;
+            }
+
+            // 读取文件
+            const fileContent = fs.readFileSync(fullPath);
+            const mimeType = getMimeType(fullPath);
+
+            // 设置响应头
+            res.writeHead(200, {
+                'Content-Type': mimeType,
+                'Content-Length': fileContent.length,
+                'Cache-Control': 'no-cache'
+            });
+
+            res.end(fileContent);
+        } catch (error) {
+            console.error('HTTP服务器错误:', error);
+            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end('服务器内部错误');
+        }
+    });
+
+    // 使用随机端口启动服务器
+    h5Server.listen(0, 'localhost', () => {
+        h5ServerPort = h5Server.address().port;
+        console.log(`✅ H5资源服务器已启动: http://localhost:${h5ServerPort}`);
+    });
+
+    // 错误处理
+    h5Server.on('error', (error) => {
+        console.error('❌ H5服务器错误:', error);
+    });
+}
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -66,6 +147,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+    // 启动H5资源服务器
+    startH5Server();
+
     // 注册 local 协议用于加载本地文件
     protocol.registerFileProtocol('local', (request, callback) => {
         let filePath = decodeURIComponent(request.url.replace('local://', ''));
@@ -93,6 +177,13 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+    // 关闭HTTP服务器
+    if (h5Server) {
+        h5Server.close(() => {
+            console.log('✅ H5资源服务器已关闭');
+        });
+    }
+
     if (process.platform !== 'darwin') {
         app.quit();
     }
@@ -149,12 +240,16 @@ ipcMain.handle('read-video-file', async (event, filePath) => {
 // IPC处理：获取H5资源路径
 ipcMain.handle('get-h5-path', async (event, filePath) => {
     try {
-        const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
-        const fullPath = app.isPackaged
-            ? path.join(process.resourcesPath, cleanPath)
-            : path.join(__dirname, 'src', cleanPath);
+        // 移除开头的斜杠
+        let cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
 
-        return `file://${fullPath}`;
+        // 移除 'assets/' 前缀（因为HTTP服务器根目录就是 assets）
+        if (cleanPath.startsWith('assets/')) {
+            cleanPath = cleanPath.substring(7);  // 移除 'assets/'
+        }
+
+        // 返回HTTP服务器URL（支持 .html 和 .hdat）
+        return `http://localhost:${h5ServerPort}/${cleanPath}`;
     } catch (error) {
         console.error('获取H5路径失败:', error);
         return null;

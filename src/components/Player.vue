@@ -109,14 +109,15 @@ const loadH5 = async () => {
     error.value = "";
 
     const filePath = props.resource.filePath;
-    const fullPath = await window.electronAPI.getH5Path(filePath);
+    const h5Url = await window.electronAPI.getH5Path(filePath);
 
-    if (!fullPath) {
+    if (!h5Url) {
       throw new Error("无法获取H5资源路径");
     }
 
-    // 使用local协议加载H5资源
-    h5Src.value = fullPath.replace("file://", "local://");
+    // 直接使用HTTP服务器URL
+    h5Src.value = h5Url;
+    console.log("📄 加载H5资源:", h5Url);
 
     // 立即记录一次（观看次数+1）
     saveInitialRecord();
