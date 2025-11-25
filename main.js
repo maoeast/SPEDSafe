@@ -59,8 +59,10 @@ const getMimeType = (filePath) => {
 
 // 启动本地HTTP服务器（用于H5资源）
 function startH5Server() {
+    // 打包后从安装目录的 assets 文件夹读取
+    // 开发时从 src/assets 读取
     const assetsPath = app.isPackaged
-        ? path.join(process.resourcesPath, 'assets')
+        ? path.join(path.dirname(app.getPath('exe')), 'assets')
         : path.join(__dirname, 'src', 'assets');
 
     h5Server = http.createServer((req, res) => {
@@ -206,8 +208,11 @@ app.on('window-all-closed', () => {
 // IPC处理：加载资源列表
 ipcMain.handle('load-resources', async () => {
     try {
-        const resourcesPath = path.join(__dirname, 'src/resources.json');
+        const resourcesPath = app.isPackaged
+            ? path.join(path.dirname(app.getPath('exe')), 'assets', 'resources.json')
+            : path.join(__dirname, 'src/resources.json');
         const data = fs.readFileSync(resourcesPath, 'utf-8');
+        console.log('📄 资源列表加载成功，共', JSON.parse(data).length, '个资源');
         return JSON.parse(data);
     } catch (error) {
         console.error('加载资源列表失败:', error);
@@ -227,8 +232,8 @@ ipcMain.handle('get-video-path', async (event, filePath) => {
             console.log('视频完整路径:', fullPath);
             return fullPath;
         }
-        // 生产模式返回打包后的路径
-        return path.join(process.resourcesPath, cleanPath);
+        // 生产模式从安装目录的 assets 读取
+        return path.join(path.dirname(app.getPath('exe')), cleanPath);
     } catch (error) {
         console.error('获取视频路径失败:', error);
         return null;
@@ -240,7 +245,7 @@ ipcMain.handle('read-video-file', async (event, filePath) => {
     try {
         const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
         const fullPath = app.isPackaged
-            ? path.join(process.resourcesPath, cleanPath)
+            ? path.join(path.dirname(app.getPath('exe')), cleanPath)
             : path.join(__dirname, 'src', cleanPath);
 
         const buffer = fs.readFileSync(fullPath);
@@ -266,6 +271,28 @@ ipcMain.handle('get-h5-path', async (event, filePath) => {
         return `http://localhost:${h5ServerPort}/${cleanPath}`;
     } catch (error) {
         console.error('获取H5路径失败:', error);
+        return null;
+    }
+});
+
+// IPC处理：获取HTTP服务器端口（用于访问图片等资源）
+ipcMain.handle('get-http-server-port', async () => {
+    return h5ServerPort;
+});
+
+// IPC处理：获取封面图片路径
+ipcMain.handle('get-cover-path', async (event, coverUrl) => {
+    try {
+        // 移除开头的斜杠
+        let cleanPath = coverUrl.startsWith('/') ? coverUrl.substring(1) : coverUrl;
+        // 移除 'assets/' 前缀（因为HTTP服务器根目录就是 assets）
+        if (cleanPath.startsWith('assets/')) {
+            cleanPath = cleanPath.substring(7);  // 移除 'assets/'
+        }
+        // 返回HTTP服务器URL
+        return `http://localhost:${h5ServerPort}/${cleanPath}`;
+    } catch (error) {
+        console.error('获取封面路径失败:', error);
         return null;
     }
 });
@@ -421,8 +448,18 @@ ipcMain.handle('get-app-config', async () => {
             headerBackground: appConfigStore.get('headerBackground')
         };
 
-        // 如果有自定义logo，返回完整路径
-        if (config.logoPath !== 'logo.png') {
+        // 返回 logo 的完整路径
+        if (config.logoPath === 'logo.png') {
+            // 默认 logo：从 assets/icons 目录读取
+            const defaultLogoPath = app.isPackaged
+                ? path.join(path.dirname(app.getPath('exe')), 'assets', 'icons', 'logo.png')
+                : path.join(__dirname, 'icons', 'logo.png');
+
+            if (fs.existsSync(defaultLogoPath)) {
+                config.logoFullPath = defaultLogoPath;
+            }
+        } else {
+            // 自定义 logo：从 userData 目录读取
             const logoFullPath = path.join(app.getPath('userData'), config.logoPath);
             if (fs.existsSync(logoFullPath)) {
                 config.logoFullPath = logoFullPath;

@@ -15,6 +15,7 @@
 - 🗂️ **资源分类**：七大安全主题分类浏览
 - 🔒 **资源保护**：扩展名伪装防止直接访问
 - 🔑 **激活系统**：试用期 + 离线激活，机器绑定防盗版
+- ⚙️ **应用设置**：自定义标题、Logo、配色方案，管理员密码保护
 
 ## 🛠️ 技术栈
 
@@ -37,7 +38,7 @@
 SPEDSafe/
 ├── icons/                      # 应用图标
 │   ├── icon.png               # 窗口图标
-│   └── logo.png               # 应用 Logo
+│   └── logo.png               # 应用 Logo（可自定义替换）
 ├── src/
 │   ├── assets/
 │   │   ├── vdat/              # 视频资源文件夹（.mdat 格式）
@@ -48,6 +49,7 @@ SPEDSafe/
 │   │   ├── ResourceGrid.vue   # 资源卡片网格
 │   │   ├── Player.vue         # 视频/H5 播放器
 │   │   ├── LearningDashboard.vue  # 学习中心仪表盘
+│   │   ├── AppSettings.vue    # 应用设置组件（自定义配置）
 │   │   └── ActivationDialog.vue   # 激活对话框
 │   ├── main.js                # Vue 应用入口
 │   └── resources.json         # 资源配置文件
@@ -166,7 +168,43 @@ protocol.registerFileProtocol('local', (request, callback) => {
 });
 ```
 
-### 2. 学习记录系统
+### 2. H5 资源加载（本地 HTTP 服务器）
+
+为了支持 `.hdat` 扩展名伪装的 H5 课件加载，应用内部启动了本地 HTTP 服务器：
+
+```javascript
+// main.js
+const getMimeType = (filePath) => {
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+        '.html': 'text/html',
+        '.hdat': 'text/html',  // .hdat 识别为 HTML
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        // ...
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
+};
+
+function startH5Server() {
+    h5Server = http.createServer((req, res) => {
+        const filePath = decodeURIComponent(parsedUrl.pathname);
+        const fullPath = path.join(assetsPath, filePath);
+        const fileContent = fs.readFileSync(fullPath);
+        const mimeType = getMimeType(fullPath);
+        res.writeHead(200, { 'Content-Type': mimeType });
+        res.end(fileContent);
+    });
+    h5Server.listen(0, 'localhost');
+}
+```
+
+**特点**：
+- 使用随机端口，避免端口冲突
+- 支持 `.hdat` 文件作为 HTML 加载
+- 正确处理 HTML 内部的相对路径资源
+
+### 3. 学习记录系统
 
 使用 `electron-store` 存储学习数据：
 
@@ -200,7 +238,101 @@ protocol.registerFileProtocol('local', (request, callback) => {
 - `get-learning-statistics` - 获取统计数据
 - `clear-learning-records` - 清空所有记录
 
-### 3. 成就系统
+### 4. 应用自定义配置系统
+
+允许管理员自定义应用外观和标题，支持以下配置项：
+
+#### 配置项
+
+1. **应用标题**
+   - 可修改头部显示的标题文字
+   - 默认：“特教安全教育资源仪”
+
+2. **Logo 图片**
+   - 支持上传 PNG/JPG 格式
+   - 最大文件大小：1MB
+   - 自动替换头部 Logo 显示
+   - 支持重置为默认 Logo
+
+3. **标题样式**
+   - 字体大小：支持 20px - 60px 范围调节
+   - 字体颜色：颜色选择器自由选择
+
+4. **Header 背景渐变**
+   - 三色渐变配置
+   - 实时预览效果
+
+#### 实现方案
+
+**配置存储**（`electron-store`）
+
+```javascript
+// main.js - 配置存储初始化
+const appConfigStore = new Store({
+    name: 'app-config',
+    defaults: {
+        appTitle: '特教安全教育资源仪',
+        logoPath: 'logo.png',
+        titleStyle: {
+            fontSize: '36px',
+            color: 'white'
+        },
+        headerBackground: 'linear-gradient(135deg, #f6d365 0%, #fda085 50%, #6dd5ed 100%)'
+    }
+});
+```
+
+**IPC 接口**：
+
+- `get-app-config` - 获取应用配置
+- `update-app-config` - 更新应用配置
+- `upload-logo` - 上传 Logo 图片
+- `reset-logo` - 重置为默认 Logo
+- `verify-admin-password` - 验证管理员密码
+
+**安全验证**：
+
+```javascript
+// 管理员密码：299451
+ipcMain.handle('verify-admin-password', async (event, password) => {
+    const ADMIN_PASSWORD = '299451';
+    return { success: password === ADMIN_PASSWORD };
+});
+```
+
+**动态加载配置**：
+
+```javascript
+// Header.vue - 从配置读取并应用
+const loadConfig = async () => {
+    const config = await window.electronAPI.getAppConfig();
+    appTitle.value = config.appTitle;
+    logoSrc.value = config.logoUrl;
+    titleStyles.value = {
+        fontSize: config.titleStyle.fontSize,
+        color: config.titleStyle.color
+    };
+    headerBackground.value = config.headerBackground;
+};
+```
+
+**使用流程**：
+
+1. 用户进入“学习中心”页面
+2. 点击底部“应用设置”按钮（绿色）
+3. 输入管理员密码：`299451`
+4. 进入设置页面修改配置
+5. 点击“保存设置”，应用立即刷新生效
+
+**涉及文件**：
+
+- `main.js` - 配置存储 + IPC 处理 + Logo 文件管理
+- `preload.js` - 配置 API 暴露
+- `src/components/AppSettings.vue` - 设置界面组件（密码验证 + 表单 + 预览）
+- `src/components/LearningDashboard.vue` - 添加设置入口按钮
+- `src/components/Header.vue` - 动态加载配置并应用
+
+### 5. 成就系统
 
 根据学习数据自动解锁徽章：
 
@@ -799,5 +931,41 @@ MIT License
 
 ---
 
-**最后更新**：2025-11-20  
+**最后更新**：2025-11-24  
 **版本**：1.0.0
+
+## 📝 更新日志
+
+### v1.0.0 (2025-11-24)
+
+**新增功能**：
+
+1. ✅ **应用自定义配置系统**
+   - 支持自定义应用标题文字
+   - 支持上传自定义 Logo 图片（PNG/JPG，最大1MB）
+   - 支持调节标题字体大小（20px-60px）
+   - 支持自定义标题颜色
+   - 支持自定义 Header 背景渐变色
+   - 管理员密码保护（密码：299451）
+   - 配置保存后立即生效
+
+2. ✅ **界面优化**
+   - 资源卡片页面添加橙绿色渐变背景
+   - 标题字体加大至36px，加入立体阴影效果
+   - Logo 尺寸加大至64px，添加鼠标悬停旋转发光效果
+   - 学习中心底部按钮重新设计（绿色“应用设置” + 红色“清空记录”并列）
+
+3. ✅ **H5 资源加载优化**
+   - 采用本地 HTTP 服务器加载 H5 资源
+   - 支持 `.hdat` 扩展名伪装
+   - 解决相对路径资源加载问题
+
+**Bug 修复**：
+- 修复 IPC 通信中对象克隆错误（Vue reactive 对象序列化问题）
+
+**技术改进**：
+- 新增 `appConfigStore` 配置存储模块
+- 新增 5 个 IPC 接口（`get-app-config`、`update-app-config`、`upload-logo`、`reset-logo`、`verify-admin-password`）
+- 新增 `AppSettings.vue` 设置组件（含密码验证、表单、预览功能）
+- 修改 `Header.vue` 支持动态配置加载
+- 修改 `LearningDashboard.vue` 添加设置入口

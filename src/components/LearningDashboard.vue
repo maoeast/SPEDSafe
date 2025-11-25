@@ -134,7 +134,7 @@
       </button>
       <button class="clear-btn" @click="handleClearRecords">
         <span class="btn-icon">🗑️</span>
-        <span class="btn-text">清空学习记录</span>
+        <span class="btn-text">清除记录</span>
       </button>
     </div>
   </div>
@@ -362,7 +362,7 @@ defineExpose({
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #66e1ea 0%, #8628e4 100%);
   color: white;
   padding: 24px;
   border-radius: 16px;

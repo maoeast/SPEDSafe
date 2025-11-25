@@ -1,0 +1,66 @@
+{
+  "name": "spedsafe",
+  "version": "1.0.0",
+  "description": "特教安全教育教学资源仪",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron": "concurrently \"npm run dev\" \"wait-on tcp:5173 && electron .\"",
+    "electron:dev": "electron .",
+    "electron:build": "npm run build && electron-builder",
+    "pack:license-generator": "node pack-license-generator.js"
+  },
+  "keywords": [
+    "electron",
+    "vue3",
+    "education",
+    "safety"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "archiver": "^7.0.1",
+    "concurrently": "^8.2.2",
+    "electron": "^23.3.13",
+    "electron-builder": "^24.0.0",
+    "vite": "^5.0.0",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0",
+    "electron-store": "^8.0.0",
+    "node-machine-id": "^1.1.12",
+    "vue": "^3.5.24"
+  },
+  "build": {
+    "appId": "com.spedsafe.app",
+    "productName": "特教安全教育资源仪",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js",
+      "license-manager.js",
+      "public-key.pem",
+      "icons/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "differentialPackage": false
+    },
+    "compression": "store",
+    "electronDist": "node_modules/electron/dist",
+    "electronVersion": "23.3.13"
+  }
+}

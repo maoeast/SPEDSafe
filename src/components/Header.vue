@@ -53,9 +53,14 @@ const loadConfig = async () => {
       headerBackground.value = result.config.headerBackground;
 
       // 设置Logo
-      if (result.config.logoFullPath) {
-        logoSrc.value = result.config.logoFullPath;
+      if (window.electronAPI) {
+        // 打包环境：通过HTTP服务器加载
+        const logoUrl = await window.electronAPI.getCoverPath(
+          "/assets/icons/logo.png"
+        );
+        logoSrc.value = logoUrl || "/icons/logo.png";
       } else {
+        // 开发环境
         logoSrc.value = "/icons/logo.png";
       }
     }

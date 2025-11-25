@@ -14,6 +14,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // 获取H5资源路径
     getH5Path: (filePath) => ipcRenderer.invoke('get-h5-path', filePath),
 
+    // 获取HTTP服务器端口
+    getHttpServerPort: () => ipcRenderer.invoke('get-http-server-port'),
+
+    // 获取封面图片路径
+    getCoverPath: (coverUrl) => ipcRenderer.invoke('get-cover-path', coverUrl),
+
     // 学习记录相关API
     getLearningRecord: (resourceId) => ipcRenderer.invoke('get-learning-record', resourceId),
     getAllLearningRecords: () => ipcRenderer.invoke('get-all-learning-records'),

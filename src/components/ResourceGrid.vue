@@ -16,7 +16,7 @@
           <div class="card-cover">
             <img
               v-if="resource.coverUrl"
-              :src="getImagePath(resource.coverUrl)"
+              :src="coverImages[resource.id] || getImagePath(resource.coverUrl)"
               :alt="resource.title"
               class="cover-image"
             />
@@ -61,9 +61,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 
-defineProps({
+const props = defineProps({
   resources: {
     type: Array,
     default: () => [],
@@ -74,6 +74,36 @@ defineEmits(["play"]);
 
 const learningRecords = ref({});
 const containerRef = ref(null);
+const coverImages = ref({});
+
+// 加载封面图片路径
+const loadCoverImages = async () => {
+  if (window.electronAPI && props.resources) {
+    for (const resource of props.resources) {
+      if (resource.coverUrl) {
+        try {
+          const coverPath = await window.electronAPI.getCoverPath(
+            resource.coverUrl
+          );
+          if (coverPath) {
+            coverImages.value[resource.id] = coverPath;
+          }
+        } catch (error) {
+          console.error("获取封面路径失败:", error);
+        }
+      }
+    }
+  }
+};
+
+// 监听 resources 变化
+watch(
+  () => props.resources,
+  () => {
+    loadCoverImages();
+  },
+  { immediate: true }
+);
 
 // 获取滚动位置
 const getScrollPosition = () => {
@@ -106,10 +136,14 @@ const getViewCount = (resourceId) => {
   return record ? record.viewCount : 0;
 };
 
-// 获取图片路径
+// 获取图片路径（开发环境）
 const getImagePath = (coverUrl) => {
   // 开发环境直接使用相对路径
-  return coverUrl.replace("/assets/", "/src/assets/");
+  if (!window.electronAPI) {
+    return coverUrl.replace("/assets/", "/src/assets/");
+  }
+  // 打包环境由 coverImages 提供完整路径
+  return "";
 };
 
 // 格式化时长
