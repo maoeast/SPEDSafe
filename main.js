@@ -29,7 +29,7 @@ const appConfigStore = new Store({
             fontSize: '36px',
             color: 'white'
         },
-        headerBackground: 'linear-gradient(135deg, #f6d365 0%, #fda085 50%, #6dd5ed 100%)'
+        headerBackground: 'linear-gradient(135deg, #FF9A56 0%, #FF6B6B 100%)'
     }
 });
 
@@ -448,21 +448,15 @@ ipcMain.handle('get-app-config', async () => {
             headerBackground: appConfigStore.get('headerBackground')
         };
 
-        // 返回 logo 的完整路径
+        // 返回 logo 的完整路径或 data URI
         if (config.logoPath === 'logo.png') {
-            // 默认 logo：从 assets/icons 目录读取
-            const defaultLogoPath = app.isPackaged
-                ? path.join(path.dirname(app.getPath('exe')), 'assets', 'icons', 'logo.png')
-                : path.join(__dirname, 'icons', 'logo.png');
-
-            if (fs.existsSync(defaultLogoPath)) {
-                config.logoFullPath = defaultLogoPath;
-            }
+            // 默认 logo：通过 HTTP 服务器提供，无需额外处理
         } else {
-            // 自定义 logo：从 userData 目录读取
+            // 自定义 logo：转为 base64 data URI，避免 file:// 安全限制
             const logoFullPath = path.join(app.getPath('userData'), config.logoPath);
             if (fs.existsSync(logoFullPath)) {
-                config.logoFullPath = logoFullPath;
+                const buffer = fs.readFileSync(logoFullPath);
+                config.logoDataUri = 'data:image/png;base64,' + buffer.toString('base64');
             }
         }
 

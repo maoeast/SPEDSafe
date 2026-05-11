@@ -65,7 +65,6 @@ defineEmits(["select"]);
 }
 
 .category-btn:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   background: white;
 }
@@ -74,7 +73,6 @@ defineEmits(["select"]);
   background: var(--category-color, #4a90e2);
   color: white;
   border-color: var(--category-color, #4a90e2);
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 

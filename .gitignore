@@ -1,1 +1,8 @@
 node_modules
+dist/
+.superpowers/
+installer/resource-installer-generated.nsi
+src/assets/vdat/
+src/assets/h5dat/
+license-generator-dist/
+license-generator.zip

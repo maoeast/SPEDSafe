@@ -362,17 +362,18 @@ defineExpose({
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #66e1ea 0%, #8628e4 100%);
-  color: white;
+  background: #FFFFFF;
+  color: #333;
   padding: 24px;
   border-radius: 16px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  transition: transform 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255,107,107,0.1);
+  transition: box-shadow 0.3s ease;
+  border: 1px solid rgba(255,107,107,0.08);
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(255,107,107,0.18);
 }
 
 .stat-icon {
@@ -384,11 +385,12 @@ defineExpose({
   font-size: 32px;
   font-weight: 700;
   margin-bottom: 8px;
+  color: #FF6B6B;
 }
 
 .stat-label {
   font-size: 14px;
-  opacity: 0.9;
+  color: #999;
 }
 
 .section-title {
@@ -410,16 +412,16 @@ defineExpose({
 .category-section {
   background: white;
   padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(255,107,107,0.1);
 }
 
 .achievement-section {
   background: white;
   padding: 24px;
-  border-radius: 16px;
+  border-radius: 14px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(255,107,107,0.1);
 }
 
 /* 响应式：小屏幕时上下排列 */
@@ -456,15 +458,14 @@ defineExpose({
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: #f5f7fa;
+  background: #FFF8F0;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .recent-item:hover {
-  background: #e8ecef;
-  transform: translateX(4px);
+  background: #FFF0E0;
 }
 
 .recent-icon {
@@ -499,21 +500,21 @@ defineExpose({
 .progress-bar {
   width: 100px;
   height: 8px;
-  background: #e0e0e0;
+  background: #FFF0E0;
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4a90e2, #7ed321);
+  background: #FF9A56;
   border-radius: 4px;
   transition: width 0.3s ease;
 }
 
 .completion-badge {
   font-size: 14px;
-  color: #7ed321;
+  color: #FF9A56;
   font-weight: 600;
 }
 
@@ -553,7 +554,7 @@ defineExpose({
 
 .category-bar {
   height: 12px;
-  background: #e0e0e0;
+  background: #FFF0E0;
   border-radius: 6px;
   overflow: hidden;
 }
@@ -575,16 +576,17 @@ defineExpose({
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: #f5f7fa;
+  background: #FFF8F0;
   border-radius: 12px;
   opacity: 0.5;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .achievement-item.unlocked {
   opacity: 1;
-  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+  background: #FFFFFF;
+  border-left: 4px solid #FF9A56;
+  box-shadow: 0 2px 8px rgba(255,107,107,0.1);
 }
 
 .achievement-icon {
@@ -609,7 +611,7 @@ defineExpose({
 
 .achievement-badge {
   font-size: 24px;
-  color: #ffd700;
+  color: #FF9A56;
 }
 
 /* 底部操作按钮区域 */
@@ -636,25 +638,23 @@ defineExpose({
 }
 
 .settings-btn {
-  background: linear-gradient(135deg, #52c41a, #73d13d);
-  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+  background: #FF9A56;
+  box-shadow: 0 2px 8px rgba(255,154,86,0.3);
 }
 
 .settings-btn:hover {
-  background: linear-gradient(135deg, #49aa16, #5fb82e);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(82, 196, 26, 0.4);
+  background: #E88B4A;
+  box-shadow: 0 4px 12px rgba(255,154,86,0.4);
 }
 
 .clear-btn {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+  background: #FF6B6B;
+  box-shadow: 0 2px 8px rgba(255,107,107,0.3);
 }
 
 .clear-btn:hover {
-  background: linear-gradient(135deg, #ff5252, #e74c5c);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+  background: #E55A5A;
+  box-shadow: 0 4px 12px rgba(255,107,107,0.4);
 }
 
 .settings-btn:active,
@@ -737,8 +737,7 @@ defineExpose({
 }
 
 .close-btn:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.15);
   color: #333;
-  transform: rotate(90deg);
 }
 </style>

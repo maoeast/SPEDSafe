@@ -170,65 +170,12 @@ defineExpose({
   flex: 1;
   overflow-y: auto;
   padding: 30px 40px;
-  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 30%, #7ed321 100%);
-  position: relative;
-}
-
-/* 添加背景图案 */
-.resource-grid-container::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: radial-gradient(
-      circle at 20% 50%,
-      rgba(255, 255, 255, 0.1) 2px,
-      transparent 2px
-    ),
-    radial-gradient(
-      circle at 80% 50%,
-      rgba(255, 255, 255, 0.1) 2px,
-      transparent 2px
-    );
-  background-size: 60px 60px;
-  background-position: 0 0, 30px 30px;
-  opacity: 0.3;
-  pointer-events: none;
-}
-
-/* 添加光晕效果 */
-.resource-grid-container::after {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.1) 0%,
-    transparent 70%
-  );
-  animation: rotate 30s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  background: #FFF8F0;
 }
 
 .grid-content {
   max-width: 1400px;
   margin: 0 auto;
-  position: relative;
-  z-index: 1;
 }
 
 .empty-state {
@@ -258,23 +205,23 @@ defineExpose({
 
 .resource-card {
   background: white;
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.1);
 }
 
 .resource-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.18);
 }
 
 .card-cover {
   position: relative;
   width: 100%;
   padding-top: 66.67%; /* 3:2 比例 */
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #F5F5F5;
   overflow: hidden;
 }
 
@@ -311,7 +258,6 @@ defineExpose({
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  backdrop-filter: blur(10px);
 }
 
 .type-badge.video {

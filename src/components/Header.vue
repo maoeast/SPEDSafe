@@ -28,13 +28,13 @@ const props = defineProps({
 defineEmits(["open-dashboard"]);
 
 const appTitle = ref("特教安全教育资源仪");
-const logoSrc = ref("/icons/logo.png");
+const logoSrc = ref("");
 const titleStyle = ref({
   fontSize: "36px",
   color: "white",
 });
 const headerBackground = ref(
-  "linear-gradient(135deg, #f6d365 0%, #fda085 50%, #6dd5ed 100%)"
+  "linear-gradient(135deg, #FF9A56 0%, #FF6B6B 100%)"
 );
 
 // 计算标题样式
@@ -46,22 +46,29 @@ const titleStyles = computed(() => ({
 // 加载配置
 const loadConfig = async () => {
   try {
+    // 先加载Logo
+    if (window.electronAPI) {
+      try {
+        const logoUrl = await window.electronAPI.getCoverPath(
+          "/assets/icons/logo.png"
+        );
+        if (logoUrl) {
+          logoSrc.value = logoUrl;
+        }
+      } catch (e) {
+        console.warn("Logo加载失败，使用占位:", e);
+      }
+    }
+
     const result = await window.electronAPI.getAppConfig();
     if (result.success) {
       appTitle.value = result.config.appTitle;
       titleStyle.value = result.config.titleStyle;
       headerBackground.value = result.config.headerBackground;
 
-      // 设置Logo
-      if (window.electronAPI) {
-        // 打包环境：通过HTTP服务器加载
-        const logoUrl = await window.electronAPI.getCoverPath(
-          "/assets/icons/logo.png"
-        );
-        logoSrc.value = logoUrl || "/icons/logo.png";
-      } else {
-        // 开发环境
-        logoSrc.value = "/icons/logo.png";
+      // 自定义logo：使用 data URI（避免 file:// 安全限制）
+      if (result.config.logoDataUri) {
+        logoSrc.value = result.config.logoDataUri;
       }
     }
   } catch (error) {
@@ -100,29 +107,25 @@ onMounted(() => {
   height: 64px;
   object-fit: contain;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-  transition: all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transition: all 0.2s ease;
   cursor: pointer;
   display: block;
 }
 
 .logo-icon:hover {
-  transform: rotate(360deg) scale(1.2);
-  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 1))
-    drop-shadow(0 0 25px rgba(255, 215, 0, 0.8))
-    drop-shadow(0 0 35px rgba(255, 215, 0, 0.6));
+  transform: scale(1.05);
 }
 
 .app-title {
   /* fontSize 和 color 通过动态绑定设置 */
   font-weight: 700;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   letter-spacing: 3px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .app-title:hover {
-  transform: translateY(-2px);
-  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 0, 0, 0.3);
+  /* 无位移，保持静态 */
 }
 
 .header-info {
@@ -141,7 +144,6 @@ onMounted(() => {
   padding: 10px 20px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 24px;
-  backdrop-filter: blur(10px);
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

@@ -66,13 +66,13 @@ import ActivationDialog from "./components/ActivationDialog.vue";
 
 // 七大分类配置
 const categories = [
-  { id: "school", name: "校园安全", icon: "🏫", color: "#4A90E2" },
-  { id: "home", name: "居家安全", icon: "🏠", color: "#FF9500" },
+  { id: "school", name: "校园安全", icon: "🏫", color: "#FF6B6B" },
+  { id: "home", name: "居家安全", icon: "🏠", color: "#FFB347" },
   { id: "community", name: "社区安全", icon: "🏘️", color: "#7ED321" },
-  { id: "personal", name: "个人安全", icon: "👤", color: "#9013FE" },
-  { id: "drill", name: "安全演习", icon: "🚨", color: "#F5222D" },
-  { id: "course", name: "安全课程", icon: "📖", color: "#FAAD14" },
-  { id: "soft", name: "安全互动", icon: "🎮", color: "#EB2F96" },
+  { id: "personal", name: "个人安全", icon: "👤", color: "#4ECDC4" },
+  { id: "drill", name: "安全演习", icon: "🚨", color: "#FF5E5E" },
+  { id: "course", name: "安全课程", icon: "📖", color: "#FFD93D" },
+  { id: "soft", name: "安全互动", icon: "🎮", color: "#FF9A56" },
 ];
 
 const currentView = ref("home");
@@ -174,14 +174,6 @@ const closeDashboard = () => {
   currentView.value = "home";
 };
 
-// 继续学习
-const continueLearning = (resourceId) => {
-  const resource = resources.value.find((r) => r.id === resourceId);
-  if (resource) {
-    handlePlay(resource);
-  }
-};
-
 // 返回主页
 const handleBack = () => {
   currentView.value = "home";
@@ -267,7 +259,7 @@ const handleSkipActivation = () => {
   width: 100%;
   height: 100%;
   overflow-y: auto; /* 允许垂直滚动 */
-  background: #f5f7fa; /* 背景颜色 */
+  background: #FFF8F0; /* 暖白背景 */
 }
 
 .dashboard-back-btn {
