@@ -1,10 +1,11 @@
-const { app, BrowserWindow, ipcMain, dialog, protocol } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const url = require('url');
 const Store = require('electron-store');
 const licenseManager = require('./license-manager');
+const { createChildSafetyAssistantRuntime } = require('./ai/ipc');
 
 // 初始化学习记录存储
 const learningStore = new Store({
@@ -36,6 +37,7 @@ const appConfigStore = new Store({
 let mainWindow;
 let h5Server;  // 本地HTTP服务器
 let h5ServerPort = 0;  // 服务器端口
+let childSafetyAssistantRuntime;
 
 // MIME类型映射
 const getMimeType = (filePath) => {
@@ -158,11 +160,18 @@ function createWindow() {
     });
 
     mainWindow.on('closed', () => {
+        childSafetyAssistantRuntime?.service.shutdown();
         mainWindow = null;
     });
 }
 
 app.whenReady().then(() => {
+    childSafetyAssistantRuntime = createChildSafetyAssistantRuntime({
+        ipcMain,
+        safeStorage,
+        Store
+    });
+
     // 启动H5资源服务器
     startH5Server();
 
@@ -190,6 +199,11 @@ app.whenReady().then(() => {
             createWindow();
         }
     });
+});
+
+app.on('before-quit', () => {
+    childSafetyAssistantRuntime?.shutdown();
+    childSafetyAssistantRuntime = null;
 });
 
 app.on('window-all-closed', () => {

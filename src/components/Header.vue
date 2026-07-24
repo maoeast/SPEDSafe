@@ -6,6 +6,10 @@
         <h1 class="app-title" :style="titleStyles">{{ appTitle }}</h1>
       </div>
       <div class="header-info">
+        <button class="assistant-entry-btn" @click="$emit('open-assistant')">
+          <i class="fa-solid fa-shield-heart btn-icon" aria-hidden="true"></i>
+          <span class="btn-text">儿童安全小助手</span>
+        </button>
         <button class="learning-center-btn" @click="$emit('open-dashboard')">
           <span class="btn-icon">📚</span>
           <span class="btn-text">学习中心</span>
@@ -25,7 +29,7 @@ const props = defineProps({
   },
 });
 
-defineEmits(["open-dashboard"]);
+defineEmits(["open-dashboard", "open-assistant"]);
 
 const appTitle = ref("特教安全教育资源仪");
 const logoSrc = ref("");
@@ -120,7 +124,7 @@ onMounted(() => {
   /* fontSize 和 color 通过动态绑定设置 */
   font-weight: 700;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  letter-spacing: 3px;
+  letter-spacing: 0;
   transition: all 0.2s ease;
 }
 
@@ -131,9 +135,11 @@ onMounted(() => {
 .header-info {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
-.learning-center-btn {
+.learning-center-btn,
+.assistant-entry-btn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -149,7 +155,8 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.learning-center-btn:hover {
+.learning-center-btn:hover,
+.assistant-entry-btn:hover {
   background: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.5);
   transform: translateY(-2px);
@@ -162,5 +169,50 @@ onMounted(() => {
 
 .btn-text {
   font-size: 16px;
+}
+
+.assistant-entry-btn {
+  background: rgba(20, 78, 82, 0.38);
+}
+
+@media (max-width: 980px) {
+  .app-header {
+    padding: 16px 22px;
+  }
+
+  .logo-area {
+    min-width: 0;
+  }
+
+  .logo-icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .app-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .learning-center-btn,
+  .assistant-entry-btn {
+    padding: 9px 12px;
+  }
+}
+
+@media (max-width: 760px) {
+  .btn-text {
+    display: none;
+  }
+
+  .learning-center-btn,
+  .assistant-entry-btn {
+    width: 42px;
+    height: 42px;
+    justify-content: center;
+    padding: 0;
+    border-radius: 8px;
+  }
 }
 </style>

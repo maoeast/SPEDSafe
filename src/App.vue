@@ -14,6 +14,7 @@
       <Header
         :totalResources="resources.length"
         @open-dashboard="openDashboard"
+        @open-assistant="assistantOpen = true"
       />
 
       <CategoryNav
@@ -52,6 +53,11 @@
       <div class="loading-spinner"></div>
       <div class="loading-text">加载中...</div>
     </div>
+
+    <ChildSafetyAssistant
+      :open="assistantOpen"
+      @close="assistantOpen = false"
+    />
   </div>
 </template>
 
@@ -63,6 +69,7 @@ import ResourceGrid from "./components/ResourceGrid.vue";
 import Player from "./components/Player.vue";
 import LearningDashboard from "./components/LearningDashboard.vue";
 import ActivationDialog from "./components/ActivationDialog.vue";
+import ChildSafetyAssistant from "./components/ChildSafetyAssistant.vue";
 
 // 七大分类配置
 const categories = [
@@ -82,6 +89,7 @@ const currentResource = ref(null);
 const loading = ref(false);
 const dashboardRef = ref(null);
 const resourceGridRef = ref(null);
+const assistantOpen = ref(false);
 
 // 保存每个分类的滚动位置
 const scrollPositions = ref({});
