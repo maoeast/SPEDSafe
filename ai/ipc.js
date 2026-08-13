@@ -1,7 +1,7 @@
 const { createArkClient } = require('./ark-client');
 const { createAssistantService, publicError } = require('./assistant-service');
 const { PROMPT_VERSION } = require('./child-safety-prompt');
-const { createSecureVault } = require('./secure-vault');
+const { createSecureVault, DEFAULT_MODEL_ID } = require('./secure-vault');
 const { createSessionService } = require('./session-service');
 
 const EVENT_CHANNEL = 'child-safety:event';
@@ -105,7 +105,7 @@ function createChildSafetyAssistantRuntime(options) {
         name: 'child-safety-assistant-config',
         defaults: {
             workspaceId: '',
-            modelId: '',
+            modelId: DEFAULT_MODEL_ID,
             apiKey: '',
             sessionDataKey: ''
         }

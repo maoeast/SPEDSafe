@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const SAFE_VALUE_PREFIX = 'safe:v1:';
 const SESSION_SNAPSHOT_VERSION = 1;
 const MODEL_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+const DEFAULT_MODEL_ID = 'deepseek-v4-flash-ga-260731';
 
 class VaultError extends Error {
     constructor(kind, message) {
@@ -222,10 +223,9 @@ function createSecureVault(options) {
     }
 
     function getModelId() {
-        const value = String(configStore.get('modelId', '') || '').trim();
-        if (!value) {
-            throw new VaultError('no_model', '尚未配置模型/推理接入点 ID');
-        }
+        // 预置默认接入点 ID；用户可在设置界面覆盖
+        const stored = String(configStore.get('modelId', '') || '').trim();
+        const value = stored || DEFAULT_MODEL_ID;
         return validateModelId(value);
     }
 
@@ -240,7 +240,7 @@ function createSecureVault(options) {
         const protectedKey = configStore.get('apiKey', '');
         return {
             workspaceId,
-            modelId: String(configStore.get('modelId', '') || ''),
+            modelId: String(configStore.get('modelId', '') || '') || DEFAULT_MODEL_ID,
             hasApiKey: typeof protectedKey === 'string' && protectedKey.startsWith(SAFE_VALUE_PREFIX),
             secureStorageAvailable: isEncryptionAvailable(),
             memoryOnly,
@@ -263,6 +263,7 @@ function createSecureVault(options) {
 module.exports = {
     SAFE_VALUE_PREFIX,
     SESSION_SNAPSHOT_VERSION,
+    DEFAULT_MODEL_ID,
     VaultError,
     createEmptySnapshot,
     createSecureVault,

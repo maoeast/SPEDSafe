@@ -193,6 +193,32 @@ test('safeStorage 可用时只落加密会话，状态不返回 Key', () => {
     assert.ok(fixture.sessionData.encryptedSnapshot.ciphertext);
 });
 
+test('未配置时预置默认模型接入点 ID，用户可覆盖', () => {
+    const fixture = createVaultFixture(true);
+
+    // 未配置：状态返回预置默认，仅缺 API Key
+    const initial = fixture.vault.getPublicStatus();
+    assert.equal(initial.modelId, 'deepseek-v4-flash-ga-260731');
+    assert.equal(initial.hasApiKey, false);
+    assert.throws(() => fixture.vault.getRequestConfig(), (err) => err.kind === 'no_key');
+
+    // 只配置 API Key：请求配置自动使用预置默认模型 ID（默认值通过格式校验）
+    fixture.vault.saveConfig({ apiKey: 'key-only' });
+    assert.deepEqual(fixture.vault.getRequestConfig(), {
+        apiKey: 'key-only',
+        modelId: 'deepseek-v4-flash-ga-260731'
+    });
+
+    // 用户保存自定义模型 ID 后覆盖默认
+    fixture.vault.saveConfig({ apiKey: 'key-only', modelId: 'ep-custom-1' });
+    assert.equal(fixture.vault.getPublicStatus().modelId, 'ep-custom-1');
+    assert.deepEqual(fixture.vault.getRequestConfig(), {
+        apiKey: 'key-only',
+        modelId: 'ep-custom-1'
+    });
+});
+
+
 test('加密会话可在服务重启后恢复，落盘内容不含正文', () => {
     const configData = {};
     const sessionData = {};

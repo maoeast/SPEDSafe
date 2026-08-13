@@ -67,6 +67,7 @@ npm run pack:license-generator  # 打包激活码生成器分发包
 
 - **唯一 provider**：火山方舟（Base URL 固定于 `ark-client.js` 主进程常量，`tools: []`）
 - **窄边界**：Preload 只接受 API Key / modelId，渲染进程永远读不到明文 Key 或会话历史
+- **预置模型**：模型接入点 ID 预置默认 `deepseek-v4-flash-ga-260731`（`secure-vault.js` 常量），界面自动预填、用户可覆盖
 - **加密**：API Key 用 safeStorage；会话用 AES-256-GCM；safeStorage 不可用时拒绝持久化 / 切内存会话，无明文降级
 - **P0**：`p0-safety.js` 识别明确即时高危事件（窒息、溺水、火灾、暴力、失踪等），本地返回 120/119/110 短响应，不请求网络
 - **流式事务**：messageId + requestId + conversationRevision 三重校验防旧流回写；支持停止、编辑并重发、重新生成
