@@ -123,9 +123,30 @@ onMounted(() => {
 .app-title {
   /* fontSize 和 color 通过动态绑定设置 */
   font-weight: 700;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   letter-spacing: 0;
   transition: all 0.2s ease;
+  /* 呼吸灯特效：同色光晕周期扩散/收缩（currentColor 自动跟随标题颜色） */
+  animation: title-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes title-breathe {
+  0%,
+  100% {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 0 4px currentColor, 0 0 12px currentColor;
+    opacity: 0.95;
+  }
+  50% {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 0 12px currentColor, 0 0 30px currentColor;
+    opacity: 1;
+  }
+}
+
+/* 无障碍：系统开启"减少动态效果"时关闭呼吸灯 */
+@media (prefers-reduced-motion: reduce) {
+  .app-title {
+    animation: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
 }
 
 .app-title:hover {
