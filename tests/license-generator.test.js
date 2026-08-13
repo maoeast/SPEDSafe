@@ -309,3 +309,38 @@ ${key}
     assert.strictEqual(parsed.m, '*');
 });
 
+test('pack 脚本可将私钥安全注入 HTML 模板（内嵌版）', () => {
+    const fs = require('fs');
+    const { injectPrivateKey } = require('../pack-license-generator.js');
+
+    // 用真实模板验证注入
+    const template = fs.readFileSync('license-generator.html', 'utf8');
+    const pem = '-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFA\n-----END PRIVATE KEY-----';
+    const injected = injectPrivateKey(template, pem);
+
+    assert.ok(injected.includes('const EMBEDDED_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----'), '私钥应注入占位符');
+    assert.ok(!injected.includes('const EMBEDDED_PRIVATE_KEY = "";'), '空占位符应被替换');
+    assert.ok(injected.includes("if (EMBEDDED_PRIVATE_KEY && EMBEDDED_PRIVATE_KEY.includes('BEGIN'))"), '自动加载逻辑应保留');
+
+    // 转义：私钥中出现双引号 / 反斜杠 / 换行时不得破坏 JS 字符串
+    const weirdPem = 'a"b\\c"d';
+    const injectedWeird = injectPrivateKey(
+        '<script>const EMBEDDED_PRIVATE_KEY = "";</script>',
+        weirdPem
+    );
+    assert.ok(injectedWeird.includes('a\\"b\\\\c\\"d'), '双引号与反斜杠应被转义');
+
+    // 注入结果必须是合法 JS 字符串字面量，且执行后值还原为原 PEM（多行 PEM 关键验证）
+    const injectedLine = injected.match(/const EMBEDDED_PRIVATE_KEY = ("[^"]*");/);
+    assert.ok(injectedLine, '注入行应为单行字符串字面量');
+    const roundTrip = Function('return ' + injectedLine[1])();
+    assert.strictEqual(roundTrip, pem, '注入后执行值应还原为原 PEM 文本');
+
+    // 占位符缺失时应报错
+    assert.throws(
+        () => injectPrivateKey('<script>no marker here</script>', pem),
+        /EMBEDDED_PRIVATE_KEY/
+    );
+});
+
+

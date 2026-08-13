@@ -10,6 +10,25 @@ const archiver = require('archiver');
 const OUTPUT_DIR = path.join(__dirname, 'license-generator-dist');
 const ZIP_FILE = path.join(__dirname, 'license-generator.zip');
 
+/**
+ * 将私钥 PEM 注入 HTML 模板，生成"开箱即用"的内嵌版本
+ * 注入值做 JS 字符串转义（反斜杠 / 双引号 / 换行），并校验占位符存在
+ */
+function injectPrivateKey(htmlContent, privateKeyPem) {
+    const escaped = String(privateKeyPem || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\r\n/g, '\\n')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\n');
+    const marker = 'const EMBEDDED_PRIVATE_KEY = "";';
+    if (!htmlContent.includes(marker)) {
+        throw new Error('license-generator.html 缺少 EMBEDDED_PRIVATE_KEY 占位符');
+    }
+    return htmlContent.replace(marker, `const EMBEDDED_PRIVATE_KEY = "${escaped}";`);
+}
+
+function build() {
 console.log('📦 正在打包激活码生成器...\n');
 
 // 1. 创建输出目录
@@ -56,6 +75,20 @@ if (fs.existsSync(keyDir)) {
     console.log('   ⚠️  .keys/ 不存在，首次使用时会自动生成');
 }
 
+// 3.5 生成内嵌私钥版本（开箱即用，但文件本身即包含私钥，分发需谨慎）
+const embeddedPrivateKeyPath = path.join(OUTPUT_DIR, '.keys', 'private.pem');
+if (fs.existsSync(embeddedPrivateKeyPath)) {
+    const privatePem = fs.readFileSync(embeddedPrivateKeyPath, 'utf8');
+    const embeddedHtml = injectPrivateKey(
+        fs.readFileSync(path.join(OUTPUT_DIR, 'license-generator.html'), 'utf8'),
+        privatePem
+    );
+    fs.writeFileSync(path.join(OUTPUT_DIR, 'license-generator-embedded.html'), embeddedHtml, 'utf8');
+    console.log('   ✅ license-generator-embedded.html (内嵌私钥，开箱即用)');
+} else {
+    console.log('   ⚠️ 未找到私钥，跳过内嵌版本生成');
+}
+
 // 4. 创建使用说明
 const readme = `# 特教安全教育资源仪 - 激活码生成器
 
@@ -73,6 +106,9 @@ const readme = `# 特教安全教育资源仪 - 激活码生成器
 - 自动保存本次生成记录，可导出 \`.txt\` 记录文件
 - 私钥加载方式：将 \`.keys/private.pem\` 文件拖入网页，或粘贴私钥文本
 - 所有操作在本机浏览器内完成，数据不联网
+
+> 💡 **开箱即用版**：\`license-generator-embedded.html\` 已内置签发私钥，双击打开即可直接生成激活码，无需再加载私钥。
+> ⚠️ **安全提醒**：内嵌版文件本身就包含私钥，请勿外传；分发时务必使用加密压缩包或当面拷贝，收到后妥善保管。
 
 ### 推荐流程：导出 .lic 激活文件
 
@@ -274,3 +310,12 @@ archive.on('error', (err) => {
 archive.pipe(output);
 archive.directory(OUTPUT_DIR, false);
 archive.finalize();
+}
+
+if (require.main === module) {
+    build();
+}
+
+module.exports = {
+    injectPrivateKey
+};

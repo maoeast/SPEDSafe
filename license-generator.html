@@ -366,6 +366,11 @@
   let currentLicense = null;   // { key, meta }
   let history = [];
 
+  // 内嵌私钥（由打包工具注入生成"开箱即用"版本；标准版为空，需手动加载私钥）
+  // 注意：内嵌私钥的 HTML 文件即等同于私钥本身，分发时务必使用安全通道
+  const EMBEDDED_PRIVATE_KEY = "";
+
+
   // ========== 工具函数 ==========
   function showToast(msg, ms) {
     toastEl.textContent = msg;
@@ -716,6 +721,13 @@
       tr.appendChild(keyTd);
       tr.appendChild(actionTd);
       historyBody.appendChild(tr);
+    });
+  }
+
+  // 若打包时注入了内嵌私钥，自动加载（开箱即用）
+  if (EMBEDDED_PRIVATE_KEY && EMBEDDED_PRIVATE_KEY.includes('BEGIN')) {
+    loadKeyFromText(EMBEDDED_PRIVATE_KEY).catch(function (e) {
+      console.error('内嵌私钥加载失败:', e.message);
     });
   }
 

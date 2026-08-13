@@ -9,6 +9,7 @@
    - 界面直观：选类型 → 输入机器码 → 一键生成、一键复制
    - 支持试用码 / 正式码 / 永久码，自动保存生成记录并支持导出
    - 私钥（`.keys/private.pem`）拖入网页或粘贴即可，数据不离开本机
+   - **内嵌版** `license-generator-embedded.html`（打包生成）：已内置签发私钥，开箱即用；⚠️ 文件本身即私钥，分发务必加密传输、切勿外传
    
 2. **命令行版本** (`generate-license.js`) - 支持批量与自动化脚本
    - 需要 Node.js（分发包 `license-generator-dist/` 已内置）
