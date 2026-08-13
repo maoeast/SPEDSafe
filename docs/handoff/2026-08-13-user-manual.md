@@ -82,3 +82,27 @@
 - 标题呼吸灯特效
 - 已构建安装包 `dist/特教安全教育资源仪 Setup 1.0.3.exe`（161.3 MB）
 - 本地 `main` 已推送至 GitHub（`a59a8a6`），工作区干净
+
+
+## 7. 手册截图与 Word 交付（2026-08-13 会话补充记录）
+
+手册已完成并配图（`docs/user-manual.md` 已引用截图），Word 版本交付见下文。
+
+### 7.1 截图产出
+
+- 工具脚本：`scripts/capture-screenshots.js`（CDP 驱动真实 UI 自动截图，用法见文件头注释）、`scripts/crop-png.js`（无损裁剪）、`scripts/check-screenshots.js`（像素级自检）
+- 截图存放：`docs/manual-images/`（10 张，含 2 张裁剪特写），已嵌入 `docs/user-manual.md`
+
+### 7.2 已知问题（需后续处理）
+
+1. **资源文件缺失**：`src/assets/vdat/anquanruce.mdat`（资源 1「安全如厕」，id=1）不存在——`resources.json` 声称 213 个视频，磁盘实际 212 个。截图脚本因此从第 2 张卡（「不能往楼下乱扔东西」）截取视频画面。建议补回该视频文件或从清单移除该资源。
+2. **视频播放截图不稳定**：第一轮截图时视频 30 秒未就绪（CDP 抓帧失败），第二轮成功。当前 `04-视频播放.png` 为自动抓取帧，**用户表示必要时可手动补拍替换**（直接覆盖同名文件即可）。
+3. **H5 课件计数**：`resources.json` 82 个 H5，磁盘 `h5dat` 下实际 80 个 index.hdat（83 个目录中有 3 个缺入口文件，具体待查）。截图用的是「安全互动」分类首个 H5（school_junior_1），文件存在。
+4. **开发模式窗口**：开发模式（未打包）启动会自动打开 DevTools，截图脚本通过 CDP `Target.closeTarget` 关闭后再截图。
+
+### 7.3 Word 交付
+
+- 文件：`docs/特教安全教育资源仪-用户操作手册.docx`
+- 生成脚本：`scripts/build-docx.js`（解析 user-manual.md 生成 docx-js 文档）
+- 依赖：`docx` npm 包（以 `--no-save` 安装于项目 node_modules，未写入 package.json，符合"不新增运行时依赖"约定；若重装依赖需重新 `npm install --no-save docx`）
+- 如需重新生成：`node scripts/build-docx.js`
