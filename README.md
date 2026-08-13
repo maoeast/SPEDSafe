@@ -1,971 +1,239 @@
-# 特教安全教育资源仪
+# 特教安全教育资源仪（SPEDSafe）
 
-一款基于 Electron + Vue 3 的桌面应用，专为特殊教育安全教学设计，提供视频和 H5 交互课件的播放与学习记录管理。
+一款基于 Electron + Vue 3 的**离线桌面应用**，面向特殊教育学校、幼儿园、小学和家庭场景，提供安全教育教学资源的播放与学习记录管理。内置"儿童安全小助手"AI 智能体，提供预防性安全教育与风险识别支持。
 
 ## 📋 项目概述
 
-本项目是一个离线桌面应用程序，包含 221 个安全教育资源（193 个视频 + 28 个 H5 课件），涵盖七大安全教育分类。应用采用 `.mdat` 扩展名伪装视频文件，防止用户直接双击播放，确保通过应用统一管理和学习。
+- **资源规模**：295 个安全教育资源（213 个视频 + 82 个 H5 交互课件），覆盖 7 大安全分类
+- **运行方式**：完全离线运行，资源采用扩展名伪装保护（`.mdat` ← MP4、`.hdat` ← HTML）
+- **授权机制**：RSA-2048 签名激活码 + 机器指纹绑定，7 天试用期，支持测试模式
+- **语言界面**：简体中文
 
 ### 核心功能
 
-- 🎬 **视频播放**：支持本地 `.mdat` 格式视频文件播放
-- 📄 **H5 课件**：内嵌 H5 交互课件播放
-- 📚 **学习中心**：记录学习历史、观看次数、学习时长、观看进度
-- 🏆 **成就系统**：根据学习数据解锁成就徽章
-- 🗂️ **资源分类**：七大安全主题分类浏览
-- 🔒 **资源保护**：扩展名伪装防止直接访问
-- 🔑 **激活系统**：试用期 + 离线激活，机器绑定防盗版
-- ⚙️ **应用设置**：自定义标题、Logo、配色方案，管理员密码保护
+| 功能 | 说明 |
+|------|------|
+| 🎬 视频播放 | 播放 `.mdat` 伪装格式的本地 MP4 视频 |
+| 📄 H5 课件 | 内嵌播放 `.hdat` 伪装格式的 H5 交互课件 |
+| 📚 学习中心 | 学习历史、观看次数、学习时长、观看进度、成就徽章 |
+| 🗂️ 资源分类 | 七大安全主题分类浏览（含分类滚动位置记忆） |
+| 🔒 资源保护 | 扩展名伪装 + 禁用右键/复制 + 自定义协议 |
+| 🔑 激活系统 | 试用期 + 离线激活，机器绑定防盗版 |
+| ⚙️ 应用设置 | 自定义标题、Logo、配色方案，管理员密码保护 |
+| 🤖 儿童安全小助手 | 内置 AI 智能体（火山方舟），支持会话、流式生成、加密存储 |
 
 ## 🛠️ 技术栈
 
-### 前端框架
-- **Electron** 23.3.13 - 桌面应用框架
-- **Vue 3** 3.5.24 - 响应式前端框架（Composition API）
-- **Vite** 5.0 - 构建工具
+- **Electron 23.3.13**（Node 18）— 桌面应用框架
+- **Vue 3.5.24**（Composition API、`<script setup>`）— 渲染进程框架
+- **Vite 5** — 前端构建工具
+- **electron-store 8** — 本地持久化（学习记录、应用配置、AI 配置与会话）
+- **node-machine-id** — 机器指纹识别
+- **crypto-js / node:crypto** — AES 加密、RSA 签名验证
+- **Electron safeStorage** — API Key 与数据密钥的本地安全存储
+- **node:test** — 内置测试框架（`npm test`）
 
-### 数据存储
-- **electron-store** 8.0.0 - 本地数据持久化
-- **node-machine-id** - 机器指纹识别
-- **crypto-js** - AES 加密库
+无 TypeScript、无路由库、无状态管理库、无额外 UI 库。
 
-### 样式资源
-- **Font Awesome** 6.5.1 (CDN) - 图标库
-
-## 📁 项目结构
+## 📁 目录结构
 
 ```
 SPEDSafe/
-├── icons/                      # 应用图标
-│   ├── icon.png               # 窗口图标
-│   └── logo.png               # 应用 Logo（可自定义替换）
-├── src/
-│   ├── assets/
-│   │   ├── vdat/              # 视频资源文件夹（.mdat 格式）
-│   │   └── h5dat/             # H5 课件资源文件夹
-│   ├── components/
-│   │   ├── Header.vue         # 主界面头部（Logo + 学习中心入口）
-│   │   ├── CategoryNav.vue    # 分类导航栏
-│   │   ├── ResourceGrid.vue   # 资源卡片网格
-│   │   ├── Player.vue         # 视频/H5 播放器
-│   │   ├── LearningDashboard.vue  # 学习中心仪表盘
-│   │   ├── AppSettings.vue    # 应用设置组件（自定义配置）
-│   │   └── ActivationDialog.vue   # 激活对话框
-│   ├── main.js                # Vue 应用入口
-│   └── resources.json         # 资源配置文件
-├── main.js                     # Electron 主进程
-├── preload.js                  # 预加载脚本（IPC 桥接）
-├── license-manager.js          # 激活验证模块
-├── generate-license.js         # 激活码生成器（Node.js 脚本）
-├── public-key.pem              # RSA 公钥（客户端验证用）
-├── .keys/                      # RSA 密钥对（私钥仅服务端保管）
-│   ├── private.pem            # RSA 私钥（生成激活码）
-│   └── public.pem             # RSA 公钥（原始文件）
-├── index.html                  # HTML 模板
-├── rename-to-mdat.js           # 批量改名脚本（MP4 → MDAT）（终端运行：node rename-to-mdat.js）
-├── package.json                # 项目配置
-└── vite.config.js              # Vite 配置
-
+├── main.js                  # Electron 主进程（窗口、协议、HTTP 服务器、IPC）
+├── preload.js               # contextBridge 预加载脚本（窄 API 暴露）
+├── license-manager.js       # 激活码验证模块（RSA-2048 + 机器绑定）
+├── generate-license.js      # 激活码生成器（Node.js 版本）
+├── license-generator.html   # 激活码生成器（单文件 HTML 网页版，浏览器即开即用）
+├── public-key.pem           # RSA 公钥（客户端验证用）
+├── .keys/                   # RSA 密钥对（private.pem 仅服务端保管，勿提交）
+├── ai/                      # 儿童安全小助手主进程模块
+│   ├── ipc.js               #   IPC 通道注册与运行时组装
+│   ├── assistant-service.js #   生成事务、流式事件、停止/编辑/重发
+│   ├── session-service.js   #   会话管理（加密快照、revision 防旧流回写）
+│   ├── secure-vault.js      #   API Key / 数据密钥的安全存储（safeStorage）
+│   ├── ark-client.js        #   火山方舟 SSE 客户端（仅此一个 provider）
+│   ├── p0-safety.js         #   P0 紧急事件本地快速响应（120/119/110）
+│   └── child-safety-prompt.js # 版本化内置提示词（v1.0.0）
+├── src/                     # Vue 渲染进程
+│   ├── main.js              #   Vue 应用入口
+│   ├── App.vue              #   根组件（view 切换 + 激活对话框）
+│   ├── style.css            #   全局样式
+│   ├── resources.json       #   资源清单（295 条）
+│   ├── assets/covers/       #   资源封面缩略图
+│   └── components/          #   UI 组件
+│       ├── Header.vue               # 顶栏（Logo、学习中心、小助手入口）
+│       ├── CategoryNav.vue          # 七大分类导航
+│       ├── ResourceGrid.vue         # 资源卡片网格
+│       ├── Player.vue               # 视频 / H5 播放器
+│       ├── LearningDashboard.vue    # 学习中心仪表盘
+│       ├── AppSettings.vue          # 应用设置（自定义配置）
+│       ├── ActivationDialog.vue     # 激活对话框
+│       └── ChildSafetyAssistant.vue # 小助手右侧工作区
+├── tests/child-safety-assistant.test.js  # Node 测试（11 项）
+├── docs/planning/           # 设计方案存档（如儿童安全小助手实施文档）
+├── installer/               # 资源安装器（NSIS 脚本与生成工具）
+├── license-generator-dist/  # 激活码生成器分发包（含 README）
+├── icons/                   # 应用图标、Logo、AI 助手头像
+├── index.html               # Vite HTML 模板
+├── vite.config.js           # Vite 配置
+├── installer.nsh            # NSIS 自定义安装脚本（默认安装路径）
+└── package.json             # 项目配置与 electron-builder 配置
 ```
-
-## 🎯 七大安全分类
-
-| 分类 ID | 名称 | 图标 | 资源数量 |
-|---------|------|------|----------|
-| `school` | 校园安全 | 🏫 | 默认分类 |
-| `home` | 居家安全 | 🏠 | - |
-| `community` | 社区安全 | 🏘️ | - |
-| `personal` | 个人安全 | 👤 | - |
-| `drill` | 安全演习 | 🚨 | - |
-| `course` | 安全课程 | 📖 | - |
-| `soft` | 安全互动 | 🎮 | - |
 
 ## 🚀 快速开始
 
 ### 环境要求
 
-- Node.js 16.x 或更高版本
-- npm 或 yarn 包管理器
+- Node.js 18.x（Electron 23 内置 Node 18，开发建议同版本）
+- npm
 
-### 安装依赖
+### 开发
 
 ```bash
-npm install
+npm install          # 安装依赖
+npm run electron     # 启动 Vite 开发服务器 + Electron（开发模式自动开 DevTools）
+npm run dev          # 仅启动 Vite 开发服务器（端口 5173）
 ```
 
-### 开发模式
+开发模式下激活系统可走"测试模式"跳过激活验证。
+
+### 测试与构建
 
 ```bash
-# 启动 Vite 开发服务器 + Electron
-npm run electron
-```
-
-### 构建生产版本
-
-```bash
-# 构建前端资源
-npm run build
-
-# 打包 Electron 应用
-npm run electron:build
+npm test                 # 运行 Node 测试（node --test）
+npm run build            # 构建前端资源到 dist/
+npm run electron:build   # 完整打包（vite build + electron-builder NSIS 安装包）
+npm run pack:resources   # 生成资源安装器脚本（installer/）
+npm run pack:license-generator  # 打包激活码生成器分发包
 ```
 
 ## 📝 资源管理
 
-### 资源配置文件（`src/resources.json`）
+### 资源清单（`src/resources.json`）
 
-每个资源包含以下字段：
+资源条目字段：
 
 ```json
 {
-  "id": "unique-id",           // 唯一标识符
-  "title": "资源标题",          // 显示标题
-  "description": "资源描述",    // 视频简介（仅视频）
-  "type": "video",             // 类型：video | h5
-  "category": "school",        // 分类 ID
-  "filePath": "/assets/vdat/xxx.mdat",  // 文件路径
-  "coverUrl": "/assets/covers/xxx.jpg"  // 封面缩略图
+  "id": "1",
+  "title": "安全如厕",
+  "type": "video",
+  "category": "school",
+  "description": "资源描述",
+  "coverUrl": "/assets/covers/anquanruce.jpg",
+  "filePath": "/assets/vdat/anquanruce.mdat",
+  "duration": 112,
+  "views": 0,
+  "createdAt": "2025-11-07T14:01:49Z"
 }
 ```
+
+### 七大安全分类（295 个资源分布）
+
+| 分类 ID | 名称 | 图标 | 资源数 |
+|---------|------|------|--------|
+| `school` | 校园安全 | 🏫 | 24 |
+| `home` | 居家安全 | 🏠 | 31 |
+| `community` | 社区安全 | 🏘️ | 21 |
+| `personal` | 个人安全 | 👤 | 21 |
+| `drill` | 安全演习 | 🚨 | 96 |
+| `course` | 安全课程 | 📖 | 27 |
+| `soft` | 安全互动 | 🎮 | 75 |
 
 ### 添加新资源
 
-1. **视频资源**：
-   - 将 MP4 文件重命名为 `.mdat` 扩展名
-   - 放入 `src/assets/vdat/` 目录
-   - 在 `resources.json` 中添加配置
+1. **视频**：将 MP4 重命名为 `.mdat`，放入 `src/assets/vdat/`；封面放入 `src/assets/covers/`
+2. **H5 课件**：将 H5 目录的入口 `index.html` 重命名为 `index.hdat`，放入 `src/assets/h5dat/`（文件夹）
+3. 在 `src/resources.json` 中新增条目（`filePath` 以 `/assets/...` 开头）
+4. 用 `npm run pack:resources` 重新生成资源安装器（如需分发）
 
-2. **H5 课件**：
-   - 将 H5 项目文件夹放入 `src/assets/h5dat/`
-   - 在 `resources.json` 中添加配置，`filePath` 指向 `index.html`
+## 🏗️ 架构
 
-### 批量重命名工具
+### 进程模型
 
-使用 `rename-to-mdat.js` 批量将 MP4 文件改为 MDAT：
+- **主进程**（`main.js`）：窗口创建、`local://` 自定义协议（视频加载）、本地 HTTP 服务器（H5 资源，随机端口）、全部 IPC 处理器、5 个 electron-store 实例
+- **Preload**（`preload.js`）：`contextBridge.exposeInMainWorld` 暴露 `window.electronAPI`，只提供固定语义方法
+- **渲染进程**（Vue 3 SPA）：无路由库，`App.vue` 用 `currentView` 在 `home` / `dashboard` / `player` 间切换；组件本地状态
+
+### 资源加载机制
+
+- **视频**：`local://` 协议将 `.mdat` 映射为 `video/mp4`，禁止直接双击文件播放
+- **H5 课件**：主进程启动本地 HTTP 服务器（随机端口，仅监听 localhost），将 `.hdat` 映射为 `text/html`；封面图片也经该服务器提供
+- 打包后资源从安装目录的 `assets/` 读取（`extraResources` 配置），开发时从 `src/assets` 读取
+
+### IPC 通道
+
+**资源**：`load-resources`、`get-video-path`、`read-video-file`、`get-h5-path`、`get-http-server-port`、`get-cover-path`
+
+**学习记录**：`get-learning-record`、`get-all-learning-records`、`save-learning-record`、`get-learning-statistics`、`clear-learning-records`
+
+**激活**：`get-machine-id`、`verify-license`、`get-activation-status`、`reset-activation`（仅开发模式）
+
+**应用配置**：`get-app-config`、`update-app-config`、`upload-logo`、`reset-logo`、`verify-admin-password`（默认密码硬编码于 `main.js`）
+
+**儿童安全小助手**：`child-safety:get-status`、`child-safety:save-config`、`child-safety:clear-api-key`、`child-safety:list-sessions`、`child-safety:create-session`、`child-safety:get-session`、`child-safety:delete-session`、`child-safety:clear-history`、`child-safety:send-message`、`child-safety:stop-generation`、`child-safety:edit-and-resend`、`child-safety:regenerate`，事件通道 `child-safety:event`
+
+### 数据存储（electron-store）
+
+| store 名称 | 用途 |
+|---|---|
+| `learning-history` | 学习记录与统计（records、statistics） |
+| `app-config` | 应用标题、Logo、标题样式、头部背景 |
+| `license-data` | 激活信息（AES 加密 + HMAC 签名，见 license-manager.js） |
+| `child-safety-assistant-config` | AI 配置（workspaceId、modelId、加密后的 API Key） |
+| `child-safety-assistant-sessions` | AI 会话（AES-256-GCM 加密快照，磁盘无明文） |
+
+## 🔑 激活系统
+
+- **流程**：机器指纹（node-machine-id）→ 管理员用私钥生成激活码（`SPED-XXXX-...`）→ 客户端用 `public-key.pem` 验证 RSA-2048 签名并绑定机器
+- **试用**：首次运行起 7 天试用期；试用期内可跳过激活，过期后强制激活
+- **测试模式**：开发环境（未打包）可在激活对话框走"测试模式"
+- **生成工具**：
+  - HTML 网页工具 `license-generator.html`（推荐，零安装，浏览器即开即用）
+  - Node 版：`generate-license.js`
+  - Python GUI/CLI：`license_generator_gui.py` / `license_generator_cli.py`（依赖见 `requirements-gui.txt`）
+  - 打包分发：`license-generator-dist/`（可用 `npm run pack:license-generator` 重新生成，含 HTML 工具）
+  - 使用指南：`LICENSE_GENERATOR_GUIDE.md`
+- **密钥管理**：签发私钥位于 `.keys/private.pem`（git 已忽略，严禁提交）；客户端验证公钥为 `public-key.pem`。**密钥轮换会使已签发激活码全部失效**，需重新签发
+
+## 🤖 儿童安全小助手
+
+内置唯一 AI 智能体，面向幼儿园、小学、特教学校和家庭场景，提供预防性安全教育、风险识别、儿童保护支持、环境安全评估和融合活动适配建议。详细设计见 `docs/planning/2026-07-23-child-safety-assistant-plan.md`。
+
+### 安全架构
+
+- **唯一 provider**：火山方舟（Base URL 固定于主进程常量，`tools: []`，无工具调用）
+- **窄 Preload 边界**：渲染进程只能提交 API Key 与模型/推理接入点 ID，无法读取明文 Key、完整历史或 Base URL
+- **密钥存储**：API Key 经 Electron `safeStorage` 加密落盘；`safeStorage` 不可用时拒绝持久化，不做明文降级
+- **会话加密**：AES-256-GCM 加密快照落盘，磁盘无明文消息；解密失败时切换为内存会话模式
+- **P0 本地响应**：识别"正在/现在/刚刚发生"的窒息、溺水、火灾、严重暴力、失踪等高危事件时，主进程直接返回 120/119/110 短响应，不等待网络
+- **版本化提示词**：内置提示词 `child-safety-assistant/v1.0.0`，含特教与融合适配原则（正向支持、可观察事实、不诊断、不约束）
+- **流式事务**：messageId / requestId / conversationRevision 三重校验，旧请求无法回写当前会话；支持停止生成、编辑并重发、重新生成
+
+### 使用
+
+1. 顶栏点击"儿童安全小助手"入口，打开右侧工作区
+2. 设置中填入火山方舟 API Key 与模型/推理接入点 ID
+3. 新建会话开始提问（空会话提供安全教育起始问题）
+
+## 🧪 测试
 
 ```bash
-node rename-to-mdat.js
+npm test
 ```
 
-## 🔧 核心功能实现
+使用 Node 内置 `node:test`，通过依赖注入模拟 fetch、safeStorage、store 与流事件，覆盖：方舟请求构造、SSE 解析（跨 chunk/CRLF/`[DONE]`/错误）、Preload 密钥边界、加密持久化与内存模式、编辑重发/重新生成事务、旧流隔离、P0 本地响应。
 
-### 1. 本地资源加载（`local://` 协议）
+## 📦 构建与分发
 
-主进程注册自定义协议，支持加载本地资源：
+- 打包目标：Windows NSIS 安装包（`electron-builder` 配置见 `package.json → build`）
+- 自定义 NSIS 脚本 `installer.nsh` 设置默认安装路径 `D:\Program Files\SpedSafe`，支持自定义安装目录
+- `extraResources` 将封面、资源清单、图标随安装包分发
+- 大批量资源分发可配合 `installer/` 资源安装器（`npm run pack:resources`）
 
-```javascript
-// main.js
-protocol.registerFileProtocol('local', (request, callback) => {
-  let filePath = decodeURIComponent(request.url.replace('local://', ''));
-  
-  // MDAT 文件识别为 MP4
-  let mimeType;
-  if (filePath.endsWith('.mdat')) {
-    mimeType = 'video/mp4';
-  }
-  
-  callback({ path: filePath, mimeType: mimeType });
-});
-```
+## 📜 版本历史
 
-### 2. H5 资源加载（本地 HTTP 服务器）
-
-为了支持 `.hdat` 扩展名伪装的 H5 课件加载，应用内部启动了本地 HTTP 服务器：
-
-```javascript
-// main.js
-const getMimeType = (filePath) => {
-    const ext = path.extname(filePath).toLowerCase();
-    const mimeTypes = {
-        '.html': 'text/html',
-        '.hdat': 'text/html',  // .hdat 识别为 HTML
-        '.css': 'text/css',
-        '.js': 'application/javascript',
-        // ...
-    };
-    return mimeTypes[ext] || 'application/octet-stream';
-};
-
-function startH5Server() {
-    h5Server = http.createServer((req, res) => {
-        const filePath = decodeURIComponent(parsedUrl.pathname);
-        const fullPath = path.join(assetsPath, filePath);
-        const fileContent = fs.readFileSync(fullPath);
-        const mimeType = getMimeType(fullPath);
-        res.writeHead(200, { 'Content-Type': mimeType });
-        res.end(fileContent);
-    });
-    h5Server.listen(0, 'localhost');
-}
-```
-
-**特点**：
-- 使用随机端口，避免端口冲突
-- 支持 `.hdat` 文件作为 HTML 加载
-- 正确处理 HTML 内部的相对路径资源
-
-### 3. 学习记录系统
-
-使用 `electron-store` 存储学习数据：
-
-**数据结构**：
-```javascript
-{
-  records: {
-    "resource-id": {
-      resourceId: "resource-id",
-      title: "资源标题",
-      type: "video",
-      category: "school",
-      viewCount: 5,              // 观看次数
-      totalDuration: 3600,       // 总学习时长（秒）
-      lastProgress: 85,          // 最后观看进度（%）
-      firstViewedAt: "2025-01-01T12:00:00Z",
-      lastViewedAt: "2025-01-15T14:30:00Z"
-    }
-  },
-  statistics: {
-    totalViews: 100,            // 总观看次数
-    totalLearningTime: 36000,   // 总学习时长
-    lastActiveDate: "2025-01-15"
-  }
-}
-```
-
-**IPC 通信接口**：
-- `save-learning-record` - 保存/更新学习记录
-- `get-all-learning-records` - 获取所有记录
-- `get-learning-statistics` - 获取统计数据
-- `clear-learning-records` - 清空所有记录
-
-### 4. 应用自定义配置系统
-
-允许管理员自定义应用外观和标题，支持以下配置项：
-
-#### 配置项
-
-1. **应用标题**
-   - 可修改头部显示的标题文字
-   - 默认：“特教安全教育资源仪”
-
-2. **Logo 图片**
-   - 支持上传 PNG/JPG 格式
-   - 最大文件大小：1MB
-   - 自动替换头部 Logo 显示
-   - 支持重置为默认 Logo
-
-3. **标题样式**
-   - 字体大小：支持 20px - 60px 范围调节
-   - 字体颜色：颜色选择器自由选择
-
-4. **Header 背景渐变**
-   - 三色渐变配置
-   - 实时预览效果
-
-#### 实现方案
-
-**配置存储**（`electron-store`）
-
-```javascript
-// main.js - 配置存储初始化
-const appConfigStore = new Store({
-    name: 'app-config',
-    defaults: {
-        appTitle: '特教安全教育资源仪',
-        logoPath: 'logo.png',
-        titleStyle: {
-            fontSize: '36px',
-            color: 'white'
-        },
-        headerBackground: 'linear-gradient(135deg, #f6d365 0%, #fda085 50%, #6dd5ed 100%)'
-    }
-});
-```
-
-**IPC 接口**：
-
-- `get-app-config` - 获取应用配置
-- `update-app-config` - 更新应用配置
-- `upload-logo` - 上传 Logo 图片
-- `reset-logo` - 重置为默认 Logo
-- `verify-admin-password` - 验证管理员密码
-
-**安全验证**：
-
-```javascript
-// 管理员密码：299451
-ipcMain.handle('verify-admin-password', async (event, password) => {
-    const ADMIN_PASSWORD = '299451';
-    return { success: password === ADMIN_PASSWORD };
-});
-```
-
-**动态加载配置**：
-
-```javascript
-// Header.vue - 从配置读取并应用
-const loadConfig = async () => {
-    const config = await window.electronAPI.getAppConfig();
-    appTitle.value = config.appTitle;
-    logoSrc.value = config.logoUrl;
-    titleStyles.value = {
-        fontSize: config.titleStyle.fontSize,
-        color: config.titleStyle.color
-    };
-    headerBackground.value = config.headerBackground;
-};
-```
-
-**使用流程**：
-
-1. 用户进入“学习中心”页面
-2. 点击底部“应用设置”按钮（绿色）
-3. 输入管理员密码：`299451`
-4. 进入设置页面修改配置
-5. 点击“保存设置”，应用立即刷新生效
-
-**涉及文件**：
-
-- `main.js` - 配置存储 + IPC 处理 + Logo 文件管理
-- `preload.js` - 配置 API 暴露
-- `src/components/AppSettings.vue` - 设置界面组件（密码验证 + 表单 + 预览）
-- `src/components/LearningDashboard.vue` - 添加设置入口按钮
-- `src/components/Header.vue` - 动态加载配置并应用
-
-### 5. 成就系统
-
-根据学习数据自动解锁徽章：
-
-| 成就 | 条件 |
-|------|------|
-| 🥇 初学者 | 观看 5 个资源 |
-| 🥈 好学生 | 观看 20 个资源 |
-| 🥉 学霸 | 观看 50 个资源 |
-| ⏰ 十小时达人 | 累计学习 10 小时 |
-| 🏫 分类小卫士 | 完成某分类 100% 资源 |
-
-## 🎨 界面设计
-
-### 配色方案
-
-- **主题渐变**：`linear-gradient(135deg, #f6d365 0%, #fda085 50%, #6dd5ed 100%)`
-  - 黄色 → 珊瑚橙 → 青绿色
-- **返回按钮**：
-  - 普通：`rgba(255, 255, 255, 0.9)`
-  - 悬停：`rgba(255, 255, 255, 1)`
-  - 点击：`#ffa726`（橙黄色）
-
-### 组件样式特点
-
-1. **Header**：渐变背景 + Logo + 学习中心入口
-2. **CategoryNav**：七大分类按钮，默认选中"校园安全"
-3. **ResourceGrid**：卡片式网格布局，显示观看次数
-4. **Player**：极简设计，只保留返回按钮
-5. **LearningDashboard**：统计卡片 + 最近学习 + 学习进度 + 成就徽章
-
-## 🔐 安全特性
-
-### CSP（内容安全策略）
-
-```html
-<meta http-equiv="Content-Security-Policy" content="
-  default-src 'self'; 
-  script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
-  style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
-  font-src 'self' https://cdnjs.cloudflare.com; 
-  img-src 'self' data: file: local:; 
-  media-src 'self' file: blob: local:; 
-  frame-src 'self' file: local:; 
-  connect-src 'self' http://localhost:* ws://localhost:*;
-">
-```
-
-### 扩展名伪装
-
-- 所有视频文件使用 `.mdat` 扩展名
-- 防止用户绕过应用直接播放
-- 应用内通过 MIME 类型映射正常播放
-
-### 右键菜单禁用
-
-```javascript
-// 视频播放器
-<video @contextmenu.prevent ... />
-```
-
-### 激活系统安全保护
-
-- **RSA-2048 数字签名**：激活码使用私钥签名，公钥验证
-- **AES-256 加密存储**：本地激活信息双重加密
-- **HMAC-SHA256 防篡改**：签名校验防止激活数据被修改
-- **机器硬件绑定**：激活码与机器码绑定，宽松模式允许 60% 硬件变更
-- **离线激活**：纯离线方式，适合教育场景无网络环境
-
-## 📊 数据流程
-
-### 播放资源流程
-
-```
-用户点击资源卡片
-  ↓
-App.vue 接收资源ID/对象
-  ↓
-查找完整资源对象（如果是ID）
-  ↓
-设置 currentResource → Player.vue
-  ↓
-Player 加载视频/H5
-  ↓
-立即保存初始记录（观看次数+1）
-  ↓
-播放过程中追踪进度
-  ↓
-退出时更新学习时长和进度
-```
-
-### 学习记录流程
-
-```
-Player.vue
-  ↓
-window.electronAPI.saveLearningRecord()
-  ↓
-preload.js (IPC 桥接)
-  ↓
-main.js (ipcMain.handle)
-  ↓
-electron-store 持久化
-  ↓
-返回结果
-  ↓
-LearningDashboard 读取显示
-```
-
-## 🔑 激活系统架构
-
-### 设计理念
-
-本应用采用**试用期 + 离线激活**的双模式机制，适合教育场景的纯离线部署需求。激活码采用 RSA 数字签名 + AES 加密存储，确保安全性与防篡改。
-
-### 核心模块
-
-#### 1. 激活码生成器（`generate-license.js`）
-
-**作用**：服务端工具，用于生成试用码和正式激活码
-
-**功能**：
-- 生成 RSA-2048 密钥对（首次运行）
-- 生成试用激活码（7 天免费，不绑定机器）
-- 生成正式激活码（绑定机器码，支持限时或永久）
-- 使用 RSA 私钥对激活数据进行数字签名
-
-**使用方法**：
-
-```bash
-# 生成试用码
-node generate-license.js --trial
-
-# 生成正式激活码（365天）
-node generate-license.js --machine <机器码> --days 365
-
-# 生成永久激活码
-node generate-license.js --machine <机器码> --permanent
-```
-
-**关键代码片段**：
-
-```javascript
-// 数据结构（字段缩写以减少激活码长度）
-const licenseData = {
-    t: 'full',              // type: 激活类型（trial/full）
-    v: '1.0',               // version: 版本号
-    m: '067D30ECBD218C95',  // machineId: 机器码
-    c: Date.now(),          // createdAt: 创建时间戳
-    e: null,                // expireAt: 过期时间（null=永久）
-    p: true                 // permanent: 是否永久
-};
-
-// RSA 签名流程
-const dataBuffer = Buffer.from(JSON.stringify(licenseData), 'utf8');
-const signature = crypto.sign('sha256', dataBuffer, {
-    key: privateKey,
-    padding: crypto.constants.RSA_PKCS1_PADDING
-});
-
-// 组合格式：[4字节数据长度] + [JSON数据] + [RSA签名]
-const lengthBuffer = Buffer.allocUnsafe(4);
-lengthBuffer.writeUInt32BE(dataBuffer.length, 0);
-const combined = Buffer.concat([lengthBuffer, dataBuffer, signature]);
-
-// Base64 编码后格式化
-const base64 = combined.toString('base64');
-const formatted = 'SPED-' + base64.match(/.{1,5}/g).join('-');
-```
-
-**激活码格式示例**：
-
-```
-SPED-AAAAU-XsidC-I6ImZ-1bGwi-LCJ2I-joiMS-4wIiw-ibSI6-IjA2N-0QzME-...
-```
-
-- 前缀：`SPED-`
-- 分组：每 5 个字符用 `-` 分隔
-- 长度：约 456 字符（包含签名）
-
-#### 2. 激活验证模块（`license-manager.js`）
-
-**作用**：客户端模块，验证激活码并管理激活状态
-
-**核心功能**：
-
-##### 机器指纹获取（宽松模式）
-
-```javascript
-function getMachineFingerprint() {
-    // 使用 node-machine-id 获取稳定的机器ID（基于 CPU + 主板）
-    const machineId = machineIdSync({ original: true });
-    
-    // SHA256 哈希后取前 16 位
-    const hash = crypto.createHash('sha256');
-    hash.update(machineId);
-    return hash.digest('hex').substring(0, 16).toUpperCase();
-    // 示例：067D30ECBD218C95
-}
-```
-
-**宽松模式容忍度**：60%（允许更换内存等非核心硬件）
-
-```javascript
-function calculateSimilarity(code1, code2) {
-    let matches = 0;
-    const len = Math.min(code1.length, code2.length);
-    for (let i = 0; i < len; i++) {
-        if (code1[i] === code2[i]) matches++;
-    }
-    return matches / len; // >= 0.6 即通过验证
-}
-```
-
-##### RSA 签名验证流程
-
-```javascript
-function decryptLicenseKey(licenseKey) {
-    // 1. 反格式化：移除 SPED- 前缀和连字符
-    const base64Data = licenseKey.replace(/^SPED-/i, '').replace(/-/g, '');
-    
-    // 2. Base64 解码
-    const combined = Buffer.from(base64Data, 'base64');
-    
-    // 3. 读取前 4 字节获取数据长度
-    const dataLength = combined.readUInt32BE(0);
-    const dataBuffer = combined.slice(4, 4 + dataLength);
-    const signature = combined.slice(4 + dataLength);
-    
-    // 4. 使用 RSA 公钥验证签名
-    const isValid = crypto.verify('sha256', dataBuffer, {
-        key: publicKey,
-        padding: crypto.constants.RSA_PKCS1_PADDING
-    }, signature);
-    
-    if (!isValid) {
-        throw new Error('激活码签名验证失败');
-    }
-    
-    // 5. 解析 JSON 数据并转换字段
-    const parsed = JSON.parse(dataBuffer.toString('utf8'));
-    return {
-        type: parsed.t,
-        version: parsed.v,
-        machineId: parsed.m,
-        createdAt: parsed.c,
-        expireAt: parsed.e,
-        permanent: parsed.p
-    };
-}
-```
-
-##### AES 加密存储机制
-
-激活成功后，使用 AES-256 加密存储到本地：
-
-```javascript
-function encryptActivationData(data) {
-    // 1. AES 加密
-    const jsonStr = JSON.stringify(data);
-    const encrypted = CryptoJS.AES.encrypt(jsonStr, AES_SECRET).toString();
-    
-    // 2. HMAC 签名防篡改
-    const hmac = CryptoJS.HmacSHA256(encrypted, HMAC_SECRET).toString();
-    
-    return {
-        data: encrypted,
-        signature: hmac
-    };
-}
-```
-
-**存储位置**（使用 electron-store）：
-
-```
-Windows: C:\Users\<用户名>\AppData\Roaming\special-edu-safe\license-data.json
-macOS: ~/Library/Application Support/special-edu-safe/license-data.json
-Linux: ~/.config/special-edu-safe/license-data.json
-```
-
-**存储内容**（加密后）：
-
-```json
-{
-  "activation": {
-    "data": "U2FsdGVkX1...",  // AES 加密后的激活数据
-    "signature": "a3f2e1..."  // HMAC-SHA256 签名
-  },
-  "firstRun": 1732089715408  // 试用期开始时间戳
-}
-```
-
-##### HMAC 防篡改校验
-
-每次读取激活数据时验证 HMAC 签名：
-
-```javascript
-function decryptActivationData(encryptedObj) {
-    // 1. 验证 HMAC 签名
-    const expectedHmac = CryptoJS.HmacSHA256(encryptedObj.data, HMAC_SECRET).toString();
-    if (expectedHmac !== encryptedObj.signature) {
-        console.error('激活数据已被篡改！');
-        return null;
-    }
-    
-    // 2. AES 解密
-    const decrypted = CryptoJS.AES.decrypt(encryptedObj.data, AES_SECRET);
-    const jsonStr = decrypted.toString(CryptoJS.enc.Utf8);
-    return JSON.parse(jsonStr);
-}
-```
-
-#### 3. 试用期逻辑处理
-
-**试用期管理**：
-
-```javascript
-function checkTrialStatus() {
-    const firstRun = licenseStore.get('firstRun');
-    const now = Date.now();
-    
-    if (!firstRun) {
-        // 首次运行，记录开始时间
-        licenseStore.set('firstRun', now);
-        return {
-            activated: false,
-            type: 'trial',
-            message: '欢迎使用！您有7天免费试用期',
-            daysRemaining: 7
-        };
-    }
-    
-    const trialExpireAt = firstRun + 7 * 24 * 60 * 60 * 1000;
-    const daysRemaining = Math.ceil((trialExpireAt - now) / (24 * 60 * 60 * 1000));
-    
-    if (now < trialExpireAt) {
-        return {
-            activated: false,
-            type: 'trial',
-            message: `试用期剩余 ${daysRemaining} 天`,
-            daysRemaining: daysRemaining
-        };
-    } else {
-        return {
-            activated: false,
-            type: 'trial_expired',
-            message: '试用期已结束，请激活后继续使用',
-            daysRemaining: 0
-        };
-    }
-}
-```
-
-**应用启动时检查**：
-
-```javascript
-// App.vue - onMounted
-const checkActivationStatus = async () => {
-    const status = await window.electronAPI.getActivationStatus();
-    activationStatus.value = status;
-    
-    // 未激活或试用期，显示激活对话框
-    if (!status.activated) {
-        setTimeout(() => {
-            showActivationDialog.value = true;
-        }, 500);
-    }
-};
-```
-
-**试用期内可跳过激活**：
-
-```javascript
-// ActivationDialog.vue
-const canSkip = computed(() => {
-    return props.activationStatus.type === 'trial' && 
-           props.activationStatus.daysRemaining > 0;
-});
-```
-
-### IPC 通信接口
-
-```javascript
-// preload.js
-contextBridge.exposeInMainWorld('electronAPI', {
-    // 获取机器码
-    getMachineId: () => ipcRenderer.invoke('get-machine-id'),
-    
-    // 验证激活码
-    verifyLicense: (licenseKey) => ipcRenderer.invoke('verify-license', licenseKey),
-    
-    // 获取激活状态
-    getActivationStatus: () => ipcRenderer.invoke('get-activation-status')
-});
-
-// main.js
-ipcMain.handle('get-machine-id', async () => {
-    const machineId = licenseManager.getMachineFingerprint();
-    return { success: true, machineId };
-});
-
-ipcMain.handle('verify-license', async (event, licenseKey) => {
-    return licenseManager.verifyLicenseKey(licenseKey);
-});
-
-ipcMain.handle('get-activation-status', async () => {
-    return licenseManager.getActivationStatus();
-});
-```
-
-### 安全配置文件
-
-**公钥文件**（`public-key.pem`）：
-
-```
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
------END PUBLIC KEY-----
-```
-
-**密钥管理**：
-- 私钥（`.keys/private.pem`）：仅服务端保管，用于生成激活码
-- 公钥（`public-key.pem`）：打包到客户端，用于验证激活码
-
-### 激活流程图
-
-```
-用户首次启动应用
-  ↓
-检查激活状态
-  ↓
-┌─────────────────┬─────────────────┬─────────────────┐
-│  已激活且有效    │    试用期内     │   试用期已过期   │
-├─────────────────┼─────────────────┼─────────────────┤
-│  正常使用       │ 显示激活对话框   │ 显示激活对话框   │
-│                │ （可跳过）       │ （不可跳过）     │
-└─────────────────┴─────────────────┴─────────────────┘
-                        ↓
-                  用户输入激活码
-                        ↓
-              反格式化 → Base64解码
-                        ↓
-               分离数据和RSA签名
-                        ↓
-              ┌────────────────┐
-              │  RSA公钥验证   │
-              └────────────────┘
-                ↓           ↓
-              成功         失败
-                ↓           ↓
-          验证机器码     提示错误
-          匹配度60%
-                ↓
-          检查过期时间
-                ↓
-        AES加密存储到本地
-                ↓
-          添加HMAC签名
-                ↓
-            激活成功
-```
-
-### 关键配置常量
-
-```javascript
-// license-manager.js
-const AES_SECRET = 'SPED-SAFE-EDU-2025-SECRET-KEY';   // AES加密密钥
-const HMAC_SECRET = 'SPED-SAFE-EDU-2025-HMAC-KEY';    // HMAC签名密钥
-const TOLERANCE_LEVEL = 0.6;                           // 机器码相似度容忍度
-const PUBLIC_KEY_PATH = path.join(__dirname, 'public-key.pem');
-
-// generate-license.js
-const RSA_KEY_SIZE = 2048;                             // RSA密钥长度
-const LICENSE_VERSION = '1.0';                         // 激活码版本
-const KEY_DIR = path.join(__dirname, '.keys');         // 密钥存储目录
-```
-
-### 开发维护建议
-
-1. **密钥安全**：
-   - 私钥（`.keys/private.pem`）不要提交到代码仓库
-   - 添加 `.keys/` 到 `.gitignore`
-   - 私钥仅用于服务端生成激活码
-
-2. **激活码分发**：
-   - 用户通过激活对话框获取机器码
-   - 服务端使用 `generate-license.js` 生成对应激活码
-   - 通过邮件或其他安全方式发送给用户
-
-3. **测试重置**：
-   ```javascript
-   // 开发模式下可清空激活数据
-   licenseStore.clear();
-   ```
-
-4. **日志调试**：
-   - 验证过程会输出详细日志到控制台
-   - 生产环境建议移除 `console.log`
-
-5. **版本兼容**：
-   - 激活码中包含 `version` 字段
-   - 未来可实现版本检查逻辑
-
-## 🐛 常见问题
-
-### 1. 视频无法播放
-
-**原因**：MIME 类型未正确设置
-
-**解决**：检查 `main.js` 中 `local://` 协议的 MIME 类型映射
-
-### 2. H5 课件底部白色
-
-**原因**：iframe 默认背景为白色
-
-**解决**：已在 `Player.vue` 中设置 `.h5-iframe { background: #000; }`
-
-### 3. 学习记录不更新
-
-**原因**：未调用刷新方法
-
-**解决**：确保在返回主页/学习中心时调用对应组件的刷新方法
-
-### 4. Font Awesome 图标不显示
-
-**原因**：CDN 加载失败或 CSP 策略阻止
-
-**解决**：检查网络连接和 CSP 配置中的 `style-src` 和 `font-src`
-
-## 📦 打包配置
-
-### electron-builder 配置（`package.json`）
-
-```json
-{
-  "build": {
-    "appId": "com.spedsafe.app",
-    "productName": "特教安全教育资源仪",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "dist/**/*",
-      "main.js",
-      "preload.js"
-    ],
-    "win": {
-      "target": "nsis",
-      "icon": "icons/icon.ico"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
-  }
-}
-```
-
-### 打包注意事项
-
-1. **资源文件**：确保 `src/assets/` 下的所有资源文件被正确打包
-2. **路径处理**：生产环境使用绝对路径
-3. **图标文件**：准备 Windows 的 `.ico` 格式图标
-
-## 🔄 开发维护指南
-
-### 添加新分类
-
-1. 在 `App.vue` 的 `categories` 数组中添加新分类
-2. 更新 `resources.json` 中的资源分类
-
-### 修改界面配色
-
-1. **主题色**：修改 `Header.vue` 和 `Player.vue` 中的渐变
-2. **按钮色**：修改各组件中的 `:active` 状态背景色
-
-### 调整成就系统
-
-在 `LearningDashboard.vue` 的 `achievements` 计算属性中修改条件和徽章
-
-### 更新 CSP 策略
-
-如需引入新的外部资源，在 `index.html` 的 CSP meta 标签中添加白名单
-
-## 📄 许可证
-
-MIT License
-
-## 👥 贡献者
-
-- 开发团队：特教安全教育项目组
-- 技术支持：Qoder AI Assistant
-
-## 📞 联系方式
-
-如有问题或建议，请联系项目维护团队。
-
----
-
-**最后更新**：2025-11-24  
-**版本**：1.0.0
-
-## 📝 更新日志
-
-### v1.0.0 (2025-11-24)
-
-**新增功能**：
-
-1. ✅ **应用自定义配置系统**
-   - 支持自定义应用标题文字
-   - 支持上传自定义 Logo 图片（PNG/JPG，最大1MB）
-   - 支持调节标题字体大小（20px-60px）
-   - 支持自定义标题颜色
-   - 支持自定义 Header 背景渐变色
-   - 管理员密码保护（密码：299451）
-   - 配置保存后立即生效
-
-2. ✅ **界面优化**
-   - 资源卡片页面添加橙绿色渐变背景
-   - 标题字体加大至36px，加入立体阴影效果
-   - Logo 尺寸加大至64px，添加鼠标悬停旋转发光效果
-   - 学习中心底部按钮重新设计（绿色“应用设置” + 红色“清空记录”并列）
-
-3. ✅ **H5 资源加载优化**
-   - 采用本地 HTTP 服务器加载 H5 资源
-   - 支持 `.hdat` 扩展名伪装
-   - 解决相对路径资源加载问题
-
-**Bug 修复**：
-- 修复 IPC 通信中对象克隆错误（Vue reactive 对象序列化问题）
-
-**技术改进**：
-- 新增 `appConfigStore` 配置存储模块
-- 新增 5 个 IPC 接口（`get-app-config`、`update-app-config`、`upload-logo`、`reset-logo`、`verify-admin-password`）
-- 新增 `AppSettings.vue` 设置组件（含密码验证、表单、预览功能）
-- 修改 `Header.vue` 支持动态配置加载
-- 修改 `LearningDashboard.vue` 添加设置入口
+| 版本 | 日期 | 说明 |
+|------|------|------|
+| v1.0.3 | 2026-07 | 资源入库（221 → 295 个）；新增儿童安全小助手（AI 模块 + 窄 Preload + 加密会话）；项目冗余清理 |
+| v1.0.0 | 2025-11-24 | 首个正式版本：资源播放、学习中心、激活系统、应用配置系统 |
