@@ -6,3 +6,4 @@ src/assets/vdat/
 src/assets/h5dat/
 license-generator-dist/
 license-generator.zip
+.keys/
