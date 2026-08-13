@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>特教安全教育资源仪 · 激活码生成工具</title>
+<style>
+  :root {
+    --primary: #FF6B6B;
+    --primary-dark: #E85555;
+    --accent: #FF9A56;
+    --bg: #FFF8F0;
+    --card: #FFFFFF;
+    --text: #333333;
+    --text-light: #888888;
+    --border: #F0E4D8;
+    --success: #27AE60;
+    --warning: #E67E22;
+    --mono: "Consolas", "Courier New", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px 16px 60px;
+    min-height: 100vh;
+  }
+  .container { max-width: 860px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 {
+    font-size: 24px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 6px;
+  }
+  header p { color: var(--text-light); font-size: 13px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.06);
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #FFFDFA;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--primary);
+    background: #FFF5F0;
+  }
+  .drop-zone .icon { font-size: 26px; margin-bottom: 6px; }
+  .drop-zone .hint { color: var(--text-light); font-size: 13px; }
+  .drop-zone .hint small { display: block; margin-top: 4px; font-size: 12px; }
+  .key-loaded {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #F0FBF4;
+    border: 1px solid #C9EED8;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  .key-loaded .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--success);
+    flex-shrink: 0;
+  }
+  .key-loaded .fingerprint { font-family: var(--mono); font-size: 13px; color: #1E7E46; }
+  .key-loaded .actions { margin-left: auto; display: flex; gap: 8px; }
+  .btn {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    font-weight: 600;
+    padding: 10px 24px;
+    font-size: 14px;
+  }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.05); }
+  .btn-ghost { background: #FFF3EC; color: var(--primary-dark); }
+  .btn-ghost:hover:not(:disabled) { background: #FFE8DC; }
+  .btn-outline { background: #fff; color: var(--text-light); border: 1px solid var(--border); }
+  .btn-outline:hover:not(:disabled) { border-color: var(--primary); color: var(--primary-dark); }
+  textarea, input[type="text"], input[type="number"], select {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea:focus, input:focus, select:focus { border-color: var(--primary); }
+  textarea { font-family: var(--mono); font-size: 13px; resize: vertical; min-height: 90px; }
+  .form-row { display: flex; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .form-row .field { flex: 1; min-width: 200px; }
+  .field label { display: block; font-size: 13px; color: var(--text-light); margin-bottom: 6px; }
+  .type-select {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .type-option {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #fff;
+  }
+  .type-option:hover { border-color: var(--accent); }
+  .type-option.active {
+    border-color: var(--primary);
+    background: #FFF5F0;
+  }
+  .type-option .t-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .type-option .t-desc { font-size: 12px; color: var(--text-light); }
+  .result-box {
+    background: #2D2D2D;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .result-box.show { display: block; }
+  .result-box .label { color: #aaa; font-size: 12px; margin-bottom: 6px; }
+  .result-box .license-key {
+    color: #FFD479;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.8;
+    word-break: break-all;
+    user-select: all;
+  }
+  .result-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-light); margin-bottom: 14px; }
+  .result-meta b { color: var(--text); font-weight: 600; }
+  .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .history-table th, .history-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-table th { color: var(--text-light); font-weight: 500; font-size: 12px; }
+  .history-table .h-key { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+  .history-table .h-action { white-space: nowrap; }
+  .empty-tip { color: var(--text-light); font-size: 13px; text-align: center; padding: 18px 0; }
+  .notice {
+    background: #FFF9E8;
+    border: 1px solid #F5E3B8;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #8A6D1A;
+    line-height: 1.8;
+  }
+  .notice b { color: var(--warning); }
+  .toast {
+    position: fixed;
+    top: 20px; left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; }
+  .footer { text-align: center; color: var(--text-light); font-size: 12px; margin-top: 20px; line-height: 1.8; }
+  @media (max-width: 600px) {
+    .type-select { grid-template-columns: 1fr; }
+    .form-row .field { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🔑 特教安全教育资源仪 · 激活码生成工具</h1>
+    <p>单文件离线版 · 浏览器打开即用 · 无需安装 · 数据不离开本机</p>
+  </header>
+
+  <!-- ① 私钥 -->
+  <div class="card">
+    <div class="card-title"><span class="step">1</span>加载签发私钥（.keys/private.pem）</div>
+    <div id="dropZone" class="drop-zone">
+      <div class="icon">📂</div>
+      <div class="hint">将 <b>private.pem</b> 文件拖拽到这里，或点击选择文件<br>
+        <small>也可以点击下方按钮粘贴私钥文本</small>
+      </div>
+    </div>
+    <input type="file" id="keyFile" accept=".pem,text/plain" style="display:none">
+    <div id="keyLoaded" class="key-loaded" style="display:none">
+      <span class="status-dot"></span>
+      <span>私钥已加载</span>
+      <span class="fingerprint" id="keyFingerprint"></span>
+      <span class="actions">
+        <button class="btn btn-ghost" id="btnPasteKey">粘贴私钥</button>
+        <button class="btn btn-outline" id="btnClearKey">移除</button>
+      </span>
+    </div>
+    <div style="margin-top:10px; display:none" id="pasteArea">
+      <textarea id="pasteKeyText" placeholder="粘贴 PEM 格式私钥内容（-----BEGIN PRIVATE KEY----- ... -----END PRIVATE KEY-----）"></textarea>
+      <div style="margin-top:8px; text-align:right">
+        <button class="btn btn-ghost" id="btnPasteCancel">取消</button>
+        <button class="btn btn-primary" id="btnPasteConfirm" style="padding:8px 18px">加载</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 类型 -->
+  <div class="card">
+    <div class="card-title"><span class="step">2</span>选择授权类型</div>
+    <div class="type-select" id="typeSelect">
+      <div class="type-option active" data-type="trial">
+        <div class="t-name">🎁 试用码</div>
+        <div class="t-desc">7 天 · 不绑定机器</div>
+      </div>
+      <div class="type-option" data-type="full">
+        <div class="t-name">📅 正式码</div>
+        <div class="t-desc">绑定机器 · 限定期限</div>
+      </div>
+      <div class="type-option" data-type="permanent">
+        <div class="t-name">♾️ 永久码</div>
+        <div class="t-desc">绑定机器 · 永久有效</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field" id="machineField" style="display:none">
+        <label>机器码（客户激活界面上显示）</label>
+        <input type="text" id="machineId" placeholder="例如：067D30ECBD218C95" autocomplete="off">
+      </div>
+      <div class="field" id="daysField" style="display:none">
+        <label>有效天数（1 - 3650）</label>
+        <input type="number" id="days" min="1" max="3650" value="365" placeholder="365">
+      </div>
+    </div>
+    <div style="text-align:center">
+      <button class="btn btn-primary" id="btnGenerate" style="min-width:220px">⚡ 生成激活码</button>
+    </div>
+  </div>
+
+  <!-- ③ 结果 -->
+  <div class="card">
+    <div class="card-title"><span class="step">3</span>生成结果</div>
+    <div class="result-box" id="resultBox">
+      <div class="label">激活码（点击文本框可全选，请完整复制含 SPED- 前缀）</div>
+      <div class="license-key" id="licenseKey"></div>
+    </div>
+    <div class="result-meta" id="resultMeta" style="display:none"></div>
+    <div style="text-align:center">
+      <button class="btn btn-primary" id="btnCopy" disabled>📋 复制激活码</button>
+      <button class="btn btn-outline" id="btnExport" disabled>💾 保存记录到文件</button>
+    </div>
+  </div>
+
+  <!-- ④ 历史 -->
+  <div class="card">
+    <div class="card-title"><span class="step">4</span>本次生成记录</div>
+    <div id="historyWrap">
+      <div class="empty-tip" id="historyEmpty">暂无记录，生成的激活码会自动出现在这里</div>
+      <table class="history-table" id="historyTable" style="display:none">
+        <thead>
+          <tr><th>类型</th><th>机器码</th><th>到期时间</th><th>激活码</th><th>操作</th></tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="notice">
+    <b>⚠️ 安全提示：</b><br>
+    ① 所有操作均在您本机的浏览器内完成，<b>不会上传任何数据</b>，关闭页面后私钥即从内存清除；<br>
+    ② <b>私钥（private.pem）务必妥善保管</b>：丢失或泄露可导致激活码被冒签，若泄露请立即轮换密钥（重新生成密钥对并重新打包客户端公钥）；<br>
+    ③ 已激活用户不受密钥轮换影响，但<b>旧激活码在新公钥下无法重新激活</b>，请保留本工具与密钥副本；<br>
+    ④ 建议使用 Chrome / Edge 浏览器打开本工具。
+  </div>
+
+  <div class="footer">
+    特教安全教育资源仪 · 激活码生成工具 v1.0<br>
+    与客户端 license-manager.js 验证逻辑兼容（RSA-2048 / SHA-256 / PKCS#1 v1.5）
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ========== 元素引用 ==========
+  const dropZone = document.getElementById('dropZone');
+  const keyFile = document.getElementById('keyFile');
+  const keyLoaded = document.getElementById('keyLoaded');
+  const keyFingerprint = document.getElementById('keyFingerprint');
+  const pasteArea = document.getElementById('pasteArea');
+  const pasteKeyText = document.getElementById('pasteKeyText');
+  const typeOptions = Array.from(document.querySelectorAll('.type-option'));
+  const machineField = document.getElementById('machineField');
+  const machineId = document.getElementById('machineId');
+  const daysField = document.getElementById('daysField');
+  const days = document.getElementById('days');
+  const btnGenerate = document.getElementById('btnGenerate');
+  const resultBox = document.getElementById('resultBox');
+  const licenseKeyEl = document.getElementById('licenseKey');
+  const resultMeta = document.getElementById('resultMeta');
+  const btnCopy = document.getElementById('btnCopy');
+  const btnExport = document.getElementById('btnExport');
+  const historyEmpty = document.getElementById('historyEmpty');
+  const historyTable = document.getElementById('historyTable');
+  const historyBody = document.getElementById('historyBody');
+  const toastEl = document.getElementById('toast');
+
+  // ========== 状态 ==========
+  let privateKey = null;   // CryptoKey
+  let privateFingerprint = ''; // 指纹（后 8 位）
+  let currentLicense = null;   // { key, meta }
+  let history = [];
+
+  // ========== 工具函数 ==========
+  function showToast(msg, ms) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function () { toastEl.classList.remove('show'); }, ms || 2200);
+  }
+
+  function nowMs() { return Date.now(); }
+
+  function fmtTime(ms) {
+    if (!ms) return '永久';
+    const d = new Date(ms);
+    const pad = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' +
+           pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  function bytesToBase64(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin);
+  }
+
+  function pemToDer(pem) {
+    const cleaned = pem
+      .replace(/-----[A-Z ]+-----/g, '')
+      .replace(/\s+/g, '');
+    if (!cleaned) throw new Error('PEM 内容为空');
+    const bin = atob(cleaned);
+    const der = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) der[i] = bin.charCodeAt(i);
+    return der;
+  }
+
+  // ========== 私钥加载 ==========
+  async function loadKeyFromText(pemText) {
+    const pem = String(pemText || '').trim();
+    if (!/BEGIN PRIVATE KEY/.test(pem)) {
+      throw new Error('不是有效的 PEM 私钥（应包含 -----BEGIN PRIVATE KEY-----）');
+    }
+    const der = pemToDer(pem);
+    // 尝试导入，验证 PKCS#8 + RSA
+    const key = await crypto.subtle.importKey(
+      'pkcs8', der,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false, ['sign']
+    );
+    // 计算指纹：SHA-256(私钥 DER) 后 8 位
+    const digest = await crypto.subtle.digest('SHA-256', der);
+    const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+    privateKey = key;
+    privateFingerprint = hex.slice(-8).toUpperCase();
+    keyFingerprint.textContent = '指纹 ' + privateFingerprint;
+    keyLoaded.style.display = 'flex';
+    dropZone.style.display = 'none';
+    pasteArea.style.display = 'none';
+    showToast('✅ 私钥加载成功');
+  }
+
+  function clearKey() {
+    privateKey = null;
+    privateFingerprint = '';
+    keyLoaded.style.display = 'none';
+    dropZone.style.display = 'block';
+    keyFile.value = '';
+    pasteKeyText.value = '';
+    pasteArea.style.display = 'none';
+    showToast('私钥已移除');
+  }
+
+  dropZone.addEventListener('click', function () { keyFile.click(); });
+  keyFile.addEventListener('change', function () {
+    const file = keyFile.files && keyFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        loadKeyFromText(reader.result).catch(e => showToast('❌ ' + e.message));
+      } catch (e) { showToast('❌ ' + e.message); }
+    };
+    reader.readAsText(file);
+  });
+
+  ['dragover', 'drop'].forEach(evtName => {
+    dropZone.addEventListener(evtName, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.toggle('dragover', evtName === 'dragover');
+      if (evtName === 'drop' && e.dataTransfer.files && e.dataTransfer.files[0]) {
+        const file = e.dataTransfer.files[0];
+        const reader = new FileReader();
+        reader.onload = function () {
+          loadKeyFromText(reader.result).catch(e => showToast('❌ ' + e.message));
+        };
+        reader.readAsText(file);
+      }
+    });
+  });
+  document.addEventListener('dragover', function (e) { e.preventDefault(); });
+  document.addEventListener('drop', function (e) { e.preventDefault(); });
+
+  document.getElementById('btnPasteKey').addEventListener('click', function () {
+    pasteArea.style.display = 'block';
+    pasteKeyText.focus();
+  });
+  document.getElementById('btnPasteCancel').addEventListener('click', function () {
+    pasteArea.style.display = 'none';
+    pasteKeyText.value = '';
+  });
+  document.getElementById('btnPasteConfirm').addEventListener('click', function () {
+    loadKeyFromText(pasteKeyText.value).catch(e => showToast('❌ ' + e.message));
+  });
+  document.getElementById('btnClearKey').addEventListener('click', clearKey);
+
+  // ========== 类型切换 ==========
+  let licenseType = 'trial';
+  typeOptions.forEach(opt => {
+    opt.addEventListener('click', function () {
+      typeOptions.forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      licenseType = opt.dataset.type;
+      machineField.style.display = (licenseType === 'trial') ? 'none' : 'block';
+      daysField.style.display = (licenseType === 'full') ? 'block' : 'none';
+      updateGenerateState();
+    });
+  });
+
+  [machineId, days].forEach(el => el.addEventListener('input', updateGenerateState));
+
+  function updateGenerateState() {
+    const hasKey = !!privateKey;
+    const hasMachine = licenseType === 'trial' || machineId.value.trim().length > 0;
+    const hasDays = licenseType !== 'full' || (days.value >= 1 && days.value <= 3650);
+    btnGenerate.disabled = !(hasKey && hasMachine && hasDays);
+    if (privateKey && licenseType !== 'trial' && machineId.value.trim().length === 16 &&
+        !/^[0-9A-Fa-f]+$/.test(machineId.value.trim())) {
+      // 16 位但非十六进制时提示（不阻止）
+      machineId.title = '机器码通常为 16 位十六进制，请确认大小写无误';
+    } else {
+      machineId.title = '';
+    }
+  }
+
+  // ========== 生成 ==========
+  function buildLicenseData(type) {
+    if (type === 'trial') {
+      // 字段顺序必须与 generate-license.js 完全一致（影响签名结果）
+      return {
+        t: 'trial',
+        v: '1.0',
+        c: nowMs(),
+        e: nowMs() + 7 * 24 * 60 * 60 * 1000,
+        m: '*'
+      };
+    }
+    const machine = machineId.value.trim().toUpperCase();
+    if (!machine) throw new Error('请输入机器码');
+    const isPermanent = type === 'permanent';
+    const d = isPermanent ? null : parseInt(days.value, 10);
+    if (!isPermanent && (!d || d < 1 || d > 3650)) throw new Error('有效天数需在 1-3650 之间');
+    // 字段顺序必须与 generate-license.js 完全一致
+    return {
+      t: 'full',
+      v: '1.0',
+      m: machine,
+      c: nowMs(),
+      e: d ? nowMs() + d * 24 * 60 * 60 * 1000 : null,
+      p: !d
+    };
+  }
+
+  function formatLicenseKey(base64Key) {
+    const groups = [];
+    for (let i = 0; i < base64Key.length; i += 5) {
+      groups.push(base64Key.slice(i, i + 5));
+    }
+    return 'SPED-' + groups.join('-');
+  }
+
+  async function signAndEncode(dataObj) {
+    const jsonData = JSON.stringify(dataObj);
+    const dataBuffer = new TextEncoder().encode(jsonData);
+    const signature = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', privateKey, dataBuffer));
+    if (signature.length !== 256) {
+      throw new Error('签名长度异常: ' + signature.length);
+    }
+    const combined = new Uint8Array(4 + dataBuffer.length + signature.length);
+    new DataView(combined.buffer).setUint32(0, dataBuffer.length, false);
+    combined.set(dataBuffer, 4);
+    combined.set(signature, 4 + dataBuffer.length);
+    return bytesToBase64(combined);
+  }
+
+  async function generate() {
+    if (!privateKey) { showToast('❌ 请先加载私钥'); return; }
+    try {
+      const dataObj = buildLicenseData(licenseType);
+      const base64 = await signAndEncode(dataObj);
+      const formatted = formatLicenseKey(base64);
+
+      const isTrial = licenseType === 'trial';
+      const isPermanent = licenseType === 'permanent';
+      const typeName = isTrial ? '试用版' : (isPermanent ? '正式版（永久）' : '正式版');
+      const machine = isTrial ? '*' : dataObj.m;
+      const meta = {
+        typeName,
+        machine,
+        createdAt: dataObj.c,
+        expireAt: dataObj.e,
+        permanent: isPermanent,
+        key: formatted,
+        ts: nowMs()
+      };
+
+      currentLicense = meta;
+      licenseKeyEl.textContent = formatted;
+      resultBox.classList.add('show');
+      resultMeta.style.display = 'flex';
+      resultMeta.innerHTML =
+        '<span>类型：<b>' + typeName + '</b></span>' +
+        '<span>机器码：<b>' + (isTrial ? '不绑定' : machine) + '</b></span>' +
+        '<span>创建：<b>' + fmtTime(meta.createdAt) + '</b></span>' +
+        '<span>到期：<b>' + fmtTime(meta.expireAt) + '</b></span>';
+      btnCopy.disabled = false;
+      btnExport.disabled = false;
+
+      history.unshift(meta);
+      if (history.length > 50) history.pop();
+      renderHistory();
+
+      showToast('✅ 激活码生成成功');
+    } catch (e) {
+      showToast('❌ ' + e.message);
+    }
+  }
+  btnGenerate.addEventListener('click', generate);
+
+  // ========== 复制 / 导出 ==========
+  function copyText(text, okMsg) {
+    function legacyCopy() {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        showToast(okMsg || '✅ 已复制到剪贴板');
+      }).catch(function () {
+        if (legacyCopy()) showToast(okMsg || '✅ 已复制到剪贴板');
+        else showToast('❌ 复制失败，请手动选择复制');
+      });
+    } else {
+      if (legacyCopy()) showToast(okMsg || '✅ 已复制到剪贴板');
+      else showToast('❌ 复制失败，请手动选择复制');
+    }
+  }
+
+  btnCopy.addEventListener('click', function () {
+    if (currentLicense) copyText(currentLicense.key);
+  });
+
+  btnExport.addEventListener('click', function () {
+    if (!currentLicense) return;
+    const meta = currentLicense;
+    const isTrial = meta.machine === '*';
+    const lines = [
+      '激活码类型: ' + (isTrial ? '试用版' : meta.typeName),
+      '机器码: ' + meta.machine,
+      '有效期: ' + (meta.permanent ? '永久' : ((meta.expireAt - meta.createdAt) / (24 * 60 * 60 * 1000) + ' 天')),
+      '创建时间: ' + fmtTime(meta.createdAt),
+      isTrial || meta.permanent ? '' : '过期时间: ' + fmtTime(meta.expireAt),
+      '',
+      '激活码:',
+      meta.key,
+      ''
+    ].filter(function (l) { return l !== '' || l === ''; }).join('\n');
+    // 上面 filter 恒真，等价 join 全部行
+    const blob = new Blob([lines], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.href = URL.createObjectURL(blob);
+    a.download = isTrial
+      ? 'trial_license_' + stamp + '.txt'
+      : 'license_' + meta.machine.slice(0, 8) + '_' + stamp + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  });
+
+  // ========== 历史记录 ==========
+  function renderHistory() {
+    historyEmpty.style.display = history.length ? 'none' : 'block';
+    historyTable.style.display = history.length ? 'table' : 'none';
+    historyBody.innerHTML = '';
+    history.forEach(function (m, idx) {
+      const tr = document.createElement('tr');
+      const typeTd = document.createElement('td');
+      typeTd.textContent = m.typeName;
+      const machineTd = document.createElement('td');
+      machineTd.textContent = m.machine === '*' ? '不绑定' : m.machine;
+      const expireTd = document.createElement('td');
+      expireTd.textContent = fmtTime(m.expireAt);
+      const keyTd = document.createElement('td');
+      keyTd.className = 'h-key';
+      keyTd.textContent = m.key;
+      keyTd.title = m.key;
+      const actionTd = document.createElement('td');
+      actionTd.className = 'h-action';
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn btn-ghost';
+      copyBtn.textContent = '复制';
+      copyBtn.style.padding = '4px 10px';
+      copyBtn.style.fontSize = '12px';
+      copyBtn.addEventListener('click', function () { copyText(m.key, '✅ 已复制激活码'); });
+      actionTd.appendChild(copyBtn);
+      tr.appendChild(typeTd);
+      tr.appendChild(machineTd);
+      tr.appendChild(expireTd);
+      tr.appendChild(keyTd);
+      tr.appendChild(actionTd);
+      historyBody.appendChild(tr);
+    });
+  }
+
+  updateGenerateState();
+})();
+</script>
+</body>
+</html>

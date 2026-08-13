@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test tests/child-safety-assistant.test.js",
+    "test": "node --test tests/child-safety-assistant.test.js tests/license-generator.test.js",
     "preview": "vite preview",
     "electron": "concurrently \"npm run dev\" \"wait-on tcp:5173 && electron .\"",
     "electron:dev": "electron .",

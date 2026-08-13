@@ -21,7 +21,8 @@ fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 // 2. 复制必要文件
 const filesToCopy = [
     { src: 'generate-license.js', dest: 'generate-license.js' },
-    { src: 'package.json', dest: 'package.json' }
+    { src: 'package.json', dest: 'package.json' },
+    { src: 'license-generator.html', dest: 'license-generator.html' }
 ];
 
 console.log('📋 复制文件：');
@@ -62,7 +63,20 @@ const readme = `# 特教安全教育资源仪 - 激活码生成器
 
 此工具用于为客户生成激活码，支持生成试用码和正式授权码。
 
-## 🚀 使用前准备
+## 🚀 推荐方式：HTML 网页工具（无需安装）
+
+双击打开 **\`license-generator.html\`**（用 Chrome / Edge 浏览器），即可在网页上生成激活码：
+
+- 无需安装 Node.js / Python，离线可用
+- 界面直观：选择授权类型 → 输入机器码 → 一键生成、一键复制
+- 支持试用码（7 天）、正式码（限定期限）、永久码
+- 自动保存本次生成记录，可导出 \`.txt\` 记录文件
+- 私钥加载方式：将 \`.keys/private.pem\` 文件拖入网页，或粘贴私钥文本
+- 所有操作在本机浏览器内完成，数据不联网
+
+> 以下为命令行方式（Node.js），供批量或自动化场景使用。
+
+## 🚀 使用前准备（命令行方式）
 
 ### 1. 安装 Node.js
 - 下载地址：https://nodejs.org/
@@ -75,7 +89,7 @@ const readme = `# 特教安全教育资源仪 - 激活码生成器
 npm install
 \`\`\`
 
-## 📖 使用方法
+## 📖 使用方法（命令行方式）
 
 ### 方式1：生成试用码（7天）
 \`\`\`
