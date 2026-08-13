@@ -47,6 +47,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     resetLogo: () => ipcRenderer.invoke('reset-logo'),
     verifyAdminPassword: (password) => ipcRenderer.invoke('verify-admin-password', password),
 
+    // 激活文件导入（.lic）
+    importLicenseFile: () => ipcRenderer.invoke('import-license-file'),
+
     childSafetyAssistant: {
         getStatus: () => ipcRenderer.invoke('child-safety:get-status'),
         saveConfig: (input = {}) => ipcRenderer.invoke('child-safety:save-config', {

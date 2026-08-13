@@ -297,6 +297,7 @@
     <div class="result-meta" id="resultMeta" style="display:none"></div>
     <div style="text-align:center">
       <button class="btn btn-primary" id="btnCopy" disabled>📋 复制激活码</button>
+      <button class="btn btn-outline" id="btnExportLic" disabled>📄 导出激活文件 (.lic)</button>
       <button class="btn btn-outline" id="btnExport" disabled>💾 保存记录到文件</button>
     </div>
   </div>
@@ -352,6 +353,7 @@
   const licenseKeyEl = document.getElementById('licenseKey');
   const resultMeta = document.getElementById('resultMeta');
   const btnCopy = document.getElementById('btnCopy');
+  const btnExportLic = document.getElementById('btnExportLic');
   const btnExport = document.getElementById('btnExport');
   const historyEmpty = document.getElementById('historyEmpty');
   const historyTable = document.getElementById('historyTable');
@@ -591,6 +593,7 @@
         '<span>创建：<b>' + fmtTime(meta.createdAt) + '</b></span>' +
         '<span>到期：<b>' + fmtTime(meta.expireAt) + '</b></span>';
       btnCopy.disabled = false;
+      btnExportLic.disabled = false;
       btnExport.disabled = false;
 
       history.unshift(meta);
@@ -633,6 +636,23 @@
 
   btnCopy.addEventListener('click', function () {
     if (currentLicense) copyText(currentLicense.key);
+  });
+
+  btnExportLic.addEventListener('click', function () {
+    if (!currentLicense) return;
+    // .lic 激活文件：内容为激活码文本，客户端激活页可"导入激活文件"直接激活
+    const blob = new Blob([currentLicense.key + '\n'], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.href = URL.createObjectURL(blob);
+    a.download = currentLicense.machine === '*'
+      ? 'trial_license_' + stamp + '.lic'
+      : 'license_' + currentLicense.machine.slice(0, 8) + '_' + stamp + '.lic';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    showToast('✅ 激活文件已导出，可直接发给客户导入');
   });
 
   btnExport.addEventListener('click', function () {

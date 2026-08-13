@@ -51,6 +51,7 @@ npm run pack:license-generator  # 打包激活码生成器分发包
 - **学习记录**：`get-learning-record`、`get-all-learning-records`、`save-learning-record`、`get-learning-statistics`、`clear-learning-records`
 - **激活**：`get-machine-id`、`verify-license`、`get-activation-status`、`reset-activation`（仅未打包时可用）
 - **应用配置**：`get-app-config`、`update-app-config`、`upload-logo`、`reset-logo`、`verify-admin-password`（默认密码 299451 硬编码于 main.js）
+- **激活文件导入**：`import-license-file`（打开文件对话框并读取 .lic / .txt 内容）
 - **AI（child-safety: 前缀）**：`get-status`、`save-config`、`clear-api-key`、`list-sessions`、`create-session`、`get-session`、`delete-session`、`clear-history`、`send-message`、`stop-generation`、`edit-and-resend`、`regenerate`；事件通道 `child-safety:event`（流式 chunk 推送）
 
 ### 数据存储（electron-store）

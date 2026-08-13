@@ -186,11 +186,14 @@ npm run pack:license-generator  # 打包激活码生成器分发包
 ## 🔑 激活系统
 
 - **流程**：机器指纹（node-machine-id）→ 管理员用私钥生成激活码（`SPED-XXXX-...`）→ 客户端用 `public-key.pem` 验证 RSA-2048 签名并绑定机器
+- **激活方式**：
+  - 手动输入激活码（激活页面直接粘贴）
+  - **导入激活文件**（.lic）：管理员在生成工具中"导出激活文件"，客户在激活页面点击"导入激活文件"选择 .lic 即可自动完成激活，全程免复制粘贴
 - **试用**：首次运行起 7 天试用期；试用期内可跳过激活，过期后强制激活
 - **测试模式**：开发环境（未打包）可在激活对话框走"测试模式"
 - **生成工具**：
-  - HTML 网页工具 `license-generator.html`（推荐，零安装，浏览器即开即用）
-  - Node 版：`generate-license.js`
+  - HTML 网页工具 `license-generator.html`（推荐，零安装，浏览器即开即用，支持导出 .lic）
+  - Node 版：`generate-license.js`（`--lic` 参数可同时输出 .lic 激活文件）
   - Python GUI/CLI：`license_generator_gui.py` / `license_generator_cli.py`（依赖见 `requirements-gui.txt`）
   - 打包分发：`license-generator-dist/`（可用 `npm run pack:license-generator` 重新生成，含 HTML 工具）
   - 使用指南：`LICENSE_GENERATOR_GUIDE.md`

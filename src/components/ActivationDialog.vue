@@ -46,6 +46,11 @@
           <p class="section-hint" v-if="errorMessage" style="color: #f56c6c">
             ❌ {{ errorMessage }}
           </p>
+          <!-- 导入激活文件 -->
+          <button class="import-file-btn" @click="handleImportFile" :disabled="activating">
+            <i class="fa-solid fa-file-import"></i>
+            导入激活文件（.lic）
+          </button>
         </div>
 
         <!-- 试用提示已移除，保持界面简洁 -->
@@ -215,6 +220,38 @@ const copyMachineId = () => {
       console.error("复制失败:", err);
     });
 };
+
+// 从激活文件内容中提取激活码（兼容纯激活码行与带说明的文本）
+function extractLicenseKey(text) {
+  if (!text) return "";
+  const match = String(text).match(/SPED-[A-Za-z0-9+/=-]+/);
+  return match ? match[0] : "";
+}
+
+// 导入 .lic 激活文件并自动激活
+const handleImportFile = async () => {
+  if (activating.value) return;
+  errorMessage.value = "";
+  try {
+    const result = await window.electronAPI.importLicenseFile();
+    if (result.canceled) return;
+    if (!result.success) {
+      errorMessage.value = result.message || "导入激活文件失败";
+      return;
+    }
+    const key = extractLicenseKey(result.content);
+    if (!key) {
+      errorMessage.value = "激活文件中未找到有效激活码（SPED- 开头）";
+      return;
+    }
+    licenseKey.value = key;
+    await handleActivate();
+  } catch (error) {
+    errorMessage.value = "导入激活文件失败: " + error.message;
+    console.error("导入激活文件错误:", error);
+  }
+};
+
 
 const handleActivate = async () => {
   if (!licenseKey.value) {
@@ -519,6 +556,36 @@ defineExpose({
   font-size: 13px;
   color: #999;
   margin: 8px 0 0 0;
+}
+
+/* 导入激活文件按钮 */
+.import-file-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 18px;
+  width: 100%;
+  justify-content: center;
+  background: #f5f7ff;
+  border: 2px dashed #b8c2f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #667eea;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.import-file-btn:hover:not(:disabled) {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+.import-file-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* 试用信息 */

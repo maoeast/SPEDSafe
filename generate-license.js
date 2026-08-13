@@ -232,8 +232,8 @@ function main() {
         console.log('📄 激活码信息：');
         console.log(`   类型: 试用版`);
         console.log(`   有效期: 7天`);
-        console.log(`   创建时间: ${new Date(licenseData.createdAt).toLocaleString('zh-CN')}`);
-        console.log(`   过期时间: ${new Date(licenseData.expireAt).toLocaleString('zh-CN')}`);
+        console.log(`   创建时间: ${new Date(licenseData.c).toLocaleString('zh-CN')}`);
+        console.log(`   过期时间: ${new Date(licenseData.e).toLocaleString('zh-CN')}`);
         console.log(`   功能: 全功能`);
         console.log('\n🔑 激活码：');
         console.log(`\n   ${formatted}\n`);
@@ -244,13 +244,17 @@ function main() {
         const filename = `trial_license_${timestamp}.txt`;
         fs.writeFileSync(filename, `激活码类型: 试用版
 有效期: 7天
-创建时间: ${new Date(licenseData.createdAt).toLocaleString('zh-CN')}
-过期时间: ${new Date(licenseData.expireAt).toLocaleString('zh-CN')}
+创建时间: ${new Date(licenseData.c).toLocaleString('zh-CN')}
+过期时间: ${new Date(licenseData.e).toLocaleString('zh-CN')}
 
 激活码:
 ${formatted}
 `);
         console.log(`💾 已保存到文件: ${filename}\n`);
+
+        if (args.includes('--lic')) {
+            saveLicFile(filename, formatted);
+        }
 
         return;
     }
@@ -295,9 +299,9 @@ ${formatted}
     console.log(`   类型: 正式版`);
     console.log(`   机器码: ${machineId}`);
     console.log(`   有效期: ${isPermanent ? '永久' : days + '天'}`);
-    console.log(`   创建时间: ${new Date(licenseData.createdAt).toLocaleString('zh-CN')}`);
+    console.log(`   创建时间: ${new Date(licenseData.c).toLocaleString('zh-CN')}`);
     if (!isPermanent) {
-        console.log(`   过期时间: ${new Date(licenseData.expireAt).toLocaleString('zh-CN')}`);
+        console.log(`   过期时间: ${new Date(licenseData.e).toLocaleString('zh-CN')}`);
     }
     console.log(`   功能: 全功能`);
     console.log('\n🔑 激活码：');
@@ -310,14 +314,40 @@ ${formatted}
     fs.writeFileSync(filename, `激活码类型: 正式版
 机器码: ${machineId}
 有效期: ${isPermanent ? '永久' : days + '天'}
-创建时间: ${new Date(licenseData.createdAt).toLocaleString('zh-CN')}
-${!isPermanent ? '过期时间: ' + new Date(licenseData.expireAt).toLocaleString('zh-CN') : ''}
+创建时间: ${new Date(licenseData.c).toLocaleString('zh-CN')}
+${!isPermanent ? '过期时间: ' + new Date(licenseData.e).toLocaleString('zh-CN') : ''}
 
 激活码:
 ${formatted}
 `);
     console.log(`💾 已保存到文件: ${filename}\n`);
+
+    if (args.includes('--lic')) {
+        saveLicFile(filename, formatted);
+    }
 }
 
-// 执行
-main();
+/**
+ * 生成 .lic 激活文件（客户端可在激活页面直接导入激活）
+ * 文件内容为激活码文本；文件名与 .txt 记录同名，扩展名替换为 .lic
+ */
+function saveLicFile(txtFilename, licenseKey) {
+    const licFilename = txtFilename.replace(/\.txt$/, '.lic');
+    fs.writeFileSync(licFilename, licenseKey + '\n');
+    console.log(`📄 已生成激活文件: ${licFilename}（客户端可导入激活）`);
+}
+
+// 执行（作为模块被 require 时（如测试）不自动运行）
+if (require.main === module) {
+    main();
+}
+
+module.exports = {
+    LICENSE_VERSION,
+    generateTrialLicense,
+    generateFullLicense,
+    encryptLicenseData,
+    formatLicenseKey,
+    unformatLicenseKey,
+    saveLicFile
+};

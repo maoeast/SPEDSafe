@@ -252,3 +252,60 @@ test('生成的激活码可被真实客户端密钥对交叉验证（新密钥�
     assert.ok(verifyLicenseKey(formatted, keysA.publicPem), '同密钥对应验证通过');
     assert.strictEqual(verifyLicenseKey(formatted, keysB.publicPem), null, '不同公钥必须验证失败');
 });
+
+// ========== .lic 激活文件流程（生成器 → 客户端导入）==========
+
+// 与 ActivationDialog.vue 的 extractLicenseKey 保持一致
+function extractLicenseKeyFromFile(text) {
+    if (!text) return "";
+    const match = String(text).match(/SPED-[A-Za-z0-9+/=-]+/);
+    return match ? match[0] : "";
+}
+
+test('生成器导出的 .lic 激活文件可被客户端导入逻辑解析并验证', async () => {
+    const generator = require('../generate-license.js');
+    const keys = await generateKeyPair();
+
+    // 与 generate-license.js --lic 相同的生成路径（Node crypto 签名）
+    const data = generator.generateFullLicense('MACHINE12345678', 365);
+    const key = generator.formatLicenseKey(generator.encryptLicenseData(data, keys.privatePem));
+
+    // .lic 文件内容 = 激活码文本（saveLicFile 输出格式：激活码 + 换行）
+    const licContent = key + '\n';
+    const extracted = extractLicenseKeyFromFile(licContent);
+    assert.strictEqual(extracted, key, '客户端应从 .lic 内容中提取出完整激活码');
+
+    const parsed = verifyLicenseKey(extracted, keys.publicPem);
+    assert.ok(parsed, '导入提取的激活码应通过客户端验证逻辑');
+    assert.strictEqual(parsed.t, 'full');
+    assert.strictEqual(parsed.m, 'MACHINE12345678');
+
+    // saveLicFile 文件名规则：.txt → .lic
+    const licName = 'license_ABC12345_2026-01-01T00-00-00-000Z.txt'.replace(/\.txt$/, '.lic');
+    assert.strictEqual(licName, 'license_ABC12345_2026-01-01T00-00-00-000Z.lic');
+});
+
+test('客户端提取逻辑兼容带说明的旧版 txt 激活码记录', async () => {
+    const generator = require('../generate-license.js');
+    const keys = await generateKeyPair();
+
+    const data = generator.generateTrialLicense();
+    const key = generator.formatLicenseKey(generator.encryptLicenseData(data, keys.privatePem));
+
+    // 模拟旧版 txt 记录格式（多行说明 + 激活码段）
+    const txtContent = `激活码类型: 试用版
+有效期: 7天
+创建时间: 2025-11-20 11:17:27
+过期时间: 2025-11-27 11:17:27
+
+激活码:
+${key}
+`;
+    const extracted = extractLicenseKeyFromFile(txtContent);
+    assert.strictEqual(extracted, key, '应从带说明的文本中提取出激活码');
+
+    const parsed = verifyLicenseKey(extracted, keys.publicPem);
+    assert.ok(parsed, '提取的激活码应通过验证');
+    assert.strictEqual(parsed.m, '*');
+});
+

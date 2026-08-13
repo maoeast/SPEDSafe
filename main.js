@@ -545,3 +545,26 @@ ipcMain.handle('verify-admin-password', async (event, password) => {
     const correctPassword = '299451';
     return { success: password === correctPassword };
 });
+
+// 选择并读取激活文件（.lic），供激活页面导入
+ipcMain.handle('import-license-file', async () => {
+    try {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            title: '选择激活文件',
+            properties: ['openFile'],
+            filters: [
+                { name: '激活文件', extensions: ['lic'] },
+                { name: '文本文件', extensions: ['txt'] },
+                { name: '所有文件', extensions: ['*'] }
+            ]
+        });
+        if (result.canceled || !result.filePaths.length) {
+            return { success: false, canceled: true };
+        }
+        const content = fs.readFileSync(result.filePaths[0], 'utf8');
+        return { success: true, content };
+    } catch (error) {
+        console.error('读取激活文件失败:', error);
+        return { success: false, message: '读取激活文件失败: ' + error.message };
+    }
+});
