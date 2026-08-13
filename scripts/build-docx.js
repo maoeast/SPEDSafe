@@ -73,6 +73,8 @@ function parseBlocks(lines) {
       const level = line.match(/^(#+)/)[1].length;
       blocks.push({ type: 'heading', level, text: line.replace(/^#+\s*/, '') });
       i++;
+    } else if (/^\s*<!--.*-->\s*$/.test(line)) {
+      i++; // HTML 注释（截图占位标记等）忽略，不进入 Word 文档
     } else if (/^---+\s*$/.test(line)) {
       i++; // 分隔线忽略
     } else if (/^\|/.test(line)) {

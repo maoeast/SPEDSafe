@@ -41,6 +41,12 @@ checks = [
 missing = [c for c in checks if c not in full]
 print("✅ 关键内容抽查:", "全部通过" if not missing else f"缺失 {missing}")
 
+# 占位注释不应出现在 Word 文档中
+if "<!--" in full:
+    print("❌ 文档中仍含有 HTML 注释占位符")
+    sys.exit(1)
+print("✅ 无 HTML 注释占位符残留")
+
 # 图片引用检查（drawing/blip 数量）
 blips = len(re.findall(r'r:embed=', xml.decode("utf-8", "ignore")))
 print("✅ document.xml 内嵌图片引用数:", blips)
