@@ -216,6 +216,35 @@ test('未配置时预置默认模型接入点 ID，用户可覆盖', () => {
         apiKey: 'key-only',
         modelId: 'ep-custom-1'
     });
+
+    // 只改模型（应用设置页只传 modelId，apiKey 经 preload 归一为空串）⇒ 已存 Key 必须保留
+    fixture.vault.saveConfig({ apiKey: '', modelId: 'ep-custom-2' });
+    assert.deepEqual(fixture.vault.getRequestConfig(), {
+        apiKey: 'key-only',
+        modelId: 'ep-custom-2'
+    });
+    assert.equal(fixture.vault.getPublicStatus().hasApiKey, true);
+
+    // 只改模型且省略 apiKey 字段（= undefined）同样不动 Key
+    fixture.vault.saveConfig({ modelId: 'ep-custom-3' });
+    assert.deepEqual(fixture.vault.getRequestConfig(), {
+        apiKey: 'key-only',
+        modelId: 'ep-custom-3'
+    });
+
+    // 非法模型 ID 被拒，且不破坏已有的模型与 Key
+    assert.throws(
+        () => fixture.vault.saveConfig({ modelId: '  ' }),
+        (err) => err instanceof VaultError && err.kind === 'invalid_model'
+    );
+    assert.throws(
+        () => fixture.vault.saveConfig({ modelId: '含中文的接入点' }),
+        (err) => err instanceof VaultError && err.kind === 'invalid_model'
+    );
+    assert.deepEqual(fixture.vault.getRequestConfig(), {
+        apiKey: 'key-only',
+        modelId: 'ep-custom-3'
+    });
 });
 
 

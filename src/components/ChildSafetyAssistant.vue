@@ -11,8 +11,9 @@
           </div>
         </div>
         <div class="assistant-header-actions">
-          <button class="icon-button" type="button" title="配置方舟" aria-label="配置方舟" @click="openSettings">
+          <button class="icon-button icon-button--labeled" type="button" title="配置方舟" aria-label="配置方舟" @click="openSettings">
             <i class="fa-solid fa-sliders"></i>
+            <span>配置</span>
           </button>
           <button class="icon-button" type="button" title="关闭" aria-label="关闭儿童安全小助手" @click="close">
             <i class="fa-solid fa-xmark"></i>
@@ -657,6 +658,17 @@ onBeforeUnmount(() => detachEvents());
 
 .icon-button:hover {
   background: rgba(255, 255, 255, 0.14);
+}
+
+/* 带文字标签的图标按钮（配置入口需要看得见）*/
+.icon-button--labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .assistant-body {

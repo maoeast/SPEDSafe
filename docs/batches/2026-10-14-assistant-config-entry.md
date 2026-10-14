@@ -1,0 +1,78 @@
+# 2026-10-14 · 小助手配置入口显性化
+> 六段 append-only，一段一作者：§1 讨论（主 agent）· §2 批次任务与设计（主 agent）· §3 设计评审（评审子代理）· §4 用户批准（主 agent）· §5 实施记录（实施者：主 agent ∥ coder）· §6 验证与收口（父代理）。
+> 编制：主 agent · 2026-10-14 · 来源 = 用户 2026-10-14 提问「AI 助手内置模型名是不是写死了、配置后没地方改」；查明模型只是默认常量、唯一入口藏在助手浮层图标里；用户选择「A+B 一起做」。
+> 台账 = #2（儿童安全小助手 · 归批）。前情 = 无（独立批）。
+## §1 讨论（主 agent）
+**状态行**：🔄 进行中（…）
+<§1 模板占位：本批条目 / 关键判据 / 授权口径>
+
+- 起因（2026-10-14）：用户问「AI 助手内置的模型名是不是写死了，配置之后没有地方修改」。
+- 查明（证据）：① 模型**不是**硬编码——`ai/secure-vault.js:6` 是默认常量 `deepseek-v4-flash-ga-260731`，读取时「有存值用存值、没存值用默认」（`:225-230`、`:243`）；② 覆盖入口存在但难找：小助手浮层右上角**无文字**小图标（`src/components/ChildSafetyAssistant.vue:14`）→「连接火山方舟」面板的「模型 / 推理接入点 ID」（`:178-179`），打开面板会回填当前值（`:485`）；③「应用设置」（`src/components/AppSettings.vue`）只有应用标题 / Logo / 顶部背景三节，**无任何 AI 配置**（`:32 / 67 / 93`），全前端仅 `ChildSafetyAssistant.vue:453` 一处写这份配置；④ 改模型**即时生效**，不用重启（每条消息现读配置：`ai/assistant-service.js:91`）。
+- 判据：配置入口必须出现在用户自然会找的位置（应用设置），且助手内入口要有文字标签——不再靠猜。
+- 授权口径：用户 2026-10-14 选择「A+B 一起做」。
+- 边界：不做模型下拉候选（选项 C 未选）；不动 IPC / preload（通道已齐：`child-safety:get-status` / `save-config` / `clear-api-key`，`preload.js:53-59`）；不改 AI 主进程逻辑。
+- 已知约束（写实现前必须遵守）：`saveConfig` 只在 `apiKey` 为非空字符串时写入（`ai/secure-vault.js:197`）+ preload 把缺省归一为 `''`（`preload.js:6-8`）⇒ 只传 `modelId` 不会误清 API Key；模型格式校验的单一事实源在主进程 `validateModelId`（`MODEL_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/`，`:5`、`:29-35`），前端只做非空、错误原文照显。
+
+## §2 批次任务与设计（主 agent）
+**状态行**：（主 agent 写入时更新）
+<§2 模板占位：本批条目（覆盖） / 设计档落点 / 机制设计 / 受影响文件与测试覆盖 / 验收对照 / 关键决策 / 上抛项>
+
+**状态行**：🔄 设计完成（用户 2026-10-14 回「开始」批准）
+
+- 本批条目（覆盖）：**A** 应用设置新增「🤖 儿童安全小助手」节（管理员可改模型 / 推理接入点 ID；API Key 只看状态与清除、**不回显**）；**B** 助手内配置入口显性化（图标按钮加文字「配置」）。
+- 机制设计：
+  · **数据流**：`AppSettings.vue` 在管理员密码通过后（沿用既有 `isAuthenticated` 门，不开新门）并行调 `window.electronAPI.childSafetyAssistant.getStatus()` 回填 `modelId` / `hasApiKey` / `secureStorageAvailable`；保存时先做非空前置校验，再 `updateAppConfig()`，随后 `childSafetyAssistant.saveConfig({ modelId })`（**只传 modelId**：preload 把缺省 apiKey 归一为 `''`，vault 仅在非空字符串时写 Key ⇒ 不会误清，`ai/secure-vault.js:197`、`preload.js:6-8`）。
+  · **校验单一事实源**：格式校验留在主进程 `validateModelId`（`MODEL_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/`，`ai/secure-vault.js:5/29-35`），前端只做非空，错误原文照显（`result.error.message`）。
+  · **清除 Key**：`clearApiKey()` + `window.confirm` 二次确认，成功后回填 `hasApiKey=false`；不改助手内已有的「重新填写 Key」通路。
+  · **B 的最小改动**：`ChildSafetyAssistant.vue` 头部按钮由「仅图标」改为「图标 + 文字『配置』」，保留 `title` / `aria-label`；不改 `openSettings()` 行为。
+  · **零新增通道**：`child-safety:get-status` / `save-config` / `clear-api-key` 已在 `preload.js:53-59` 暴露，主进程 AI 模块一行不改。
+- 受影响文件与行数（实测）：`src/components/AppSettings.vue`（607 行 → 预计 +85）、`src/components/ChildSafetyAssistant.vue`（1368 行 → 预计 +2）、`docs/user-manual.md`（若手册需要写入口位置，作为文档面后补——见下）。
+- 验收对照：① 密码进设置可见该节、模型回填默认 `deepseek-v4-flash-ga-260731`、Key 状态正确；② 改模型保存 → 助手面板打开时回填新值，发消息即用新模型（`ai/assistant-service.js:91` 每条消息现读配置）；③ 空模型 → 前置校验拦下、不写入任何一侧；④ 非法格式 → 主进程错误原文展示；⑤ 只改模型后 `hasApiKey` 仍为真；⑥ 助手头部出现「配置」二字；⑦ `npm test` 全绿。
+- 关键决策：① 不引入模型候选下拉（用户未选 C）；② 保存沿用既有「保存设置」按钮，不新增独立保存钮（一次点击保存全部，避免两套保存语义）；③ 不用 IPC 新增通道。
+- 上抛项：是否随本批出 1.0.5 安装包以到现场 —— 用户答复「交付时再定」，交付时再问。
+- 最近先例：同批前例 `docs/batches/2026-10-14-activation-key-generation-guard.md`（同一 UI 层次：激活页/生成器页加提示行，沿用既有样式类与既有点击处理，不新增通道）；应用设置节的先例＝本文件既有三节（`AppSettings.vue:32/67/93`：`.form-section` + `.section-title` + `.form-group` + `.hint`），本批第 4 节沿用同一形状。偏离：新增了一个「只读状态 + 危险操作（清除 Key）」组合，既有三节没有这种形态——理由是 Key 不能回显，只能用状态 + 清除表达。
+
+## §3 设计评审（评审子代理）
+## §4 用户批准（主 agent）
+## §5 实施记录（实施者：主 agent ∥ coder）
+
+**状态行**：实施完成
+
+### 改动清单（文件 · 改动 · 坐标）
+
+| 文件 | 改动 | 坐标 |
+|---|---|---|
+| `src/components/AppSettings.vue` | 新增第 4 节「🤖 儿童安全小助手」：模型 / 推理接入点 ID 输入框（回填当前值）、API Key 状态胶囊（已配置 / 未配置）、「清除已保存的 API Key」按钮（二次确认）、两行说明；`loadAssistantStatus()`（密码通过后拉 `getStatus()`）；`clearAssistantKey()`；`saveSettings()` 改为「非空前置校验 → 存应用配置 → **只传 modelId** 存小助手 → 未配 Key 时提示」；`settings-desc` 文案同步；新增样式 `.assistant-key-row` / `.key-status` / `.clear-key-btn` / `.key-warn` / `.assistant-message` | `:5`、`:116-163`、`:209-256`、`:273`、`:361-419`、`:601-676` |
+| `src/components/ChildSafetyAssistant.vue` | 头部配置按钮由「仅图标」改为「图标 + 文字『配置』」（新增 `icon-button--labeled` 修饰类 + 样式），`title` / `aria-label` 不变 | `:14-17`、`:663-673` |
+| `tests/child-safety-assistant.test.js` | 在「未配置时预置默认模型接入点 ID，用户可覆盖」用例内补 4 组断言：只传空 `apiKey` 改模型 ⇒ Key 保留；省略 `apiKey` 字段改模型 ⇒ Key 保留；空模型与中文模型被拒（`invalid_model`）；被拒后模型与 Key 均未被破坏 | `:219-247` |
+
+### 验证（命令 → 结果）
+- `npm run build`（vite build）→ ✅ 28 modules transformed，无报错（SFC 模板/脚本编译通过）。
+- `npm test` → ✅ **30 tests / 30 pass / 0 fail / 0 skipped**（新断言在同一用例内，用例数不变、断言数 +11）。
+- 改动 JS 文件 `node --check` / edit 工具语法检查 → ✅。
+- **真机走查（真实 Electron 应用，CDP 驱动；只截应用窗口内容，不截桌面）**：
+  · 环境：`npm run dev`（vite 5173）+ `npx electron . --remote-debugging-port=9222`；走查脚本放 `%TEMP%`，跑完已删。
+  · 路径与结果：学习中心 → ⚙️ 应用设置 → 管理员密码 `299451` → 通过；随后
+    ① 节标题序列 = 应用标题 / 应用Logo / 顶部背景 / **🤖 儿童安全小助手**（第 4 节，在保存按钮之前）；
+    ② 模型输入框回填 `deepseek-v4-flash-ga-260731`（预置默认），占位符与助手面板一致；
+    ③ Key 状态显示「未配置」、清除按钮 `disabled=true`（本机无 Key，语义正确）；
+    ④ 清空模型 → 保存 → 提示「保存失败：请填写小助手的模型 / 推理接入点 ID」（`.save-message.error`），**未写入任何一侧**；
+    ⑤ 填回模型 → 保存 → 页面按既有逻辑刷新；重进设置回读模型值一致（store 往返成立）；
+    ⑥ 助手面板头部按钮实测渲染为「配置」(text) + 「配置方舟」(title/aria)，点击打开配置面板。
+  · 截图证据：`%TEMP%\sped-ui-10-assistant-section-view.png`（设置页新节）、`%TEMP%\sped-ui-6-assistant-panel.png`（助手头部「配置」）。
+
+### 未完成 / 未验证（如实登记）
+- 未在真机点「清除已保存的 API Key」走通全流程：dev 环境本机无 Key，按钮为禁用态。该路径由代码链（`clearApiKey()` → `hasApiKey` 回填）与既有测试覆盖；交付后可在有 Key 的机器上复点一次。
+- 未出安装包：本批改的是客户端界面，要到现场需重新打包 1.0.5（用户答复「交付时再定」，交付时再问）。
+
+### 独立评审（代码）与处置
+- 评审结论：**pass**（1 🔵，无 🔴）。
+- 🔵 处置：**Not an issue**（技术反驳，带证据）。评审意见：文档称「apiKey 经 preload 归一为空串」，而实现是完全省略 `apiKey` 字段 ⇒ 认为 preload 归一不成立、文档失真。实测反证：`preload.js:55-58` `saveConfig: (input = {}) => ipcRenderer.invoke('child-safety:save-config', { apiKey: stringValue(input.apiKey), modelId: stringValue(input.modelId) })`、`preload.js:6-8` `stringValue(value) { return typeof value === 'string' ? value : ''; }` —— 渲染层省略 `apiKey` 时 `stringValue(undefined) === ''`，**preload 确实归一为空串**；主进程 `ai/ipc.js:57-60` 收到字符串 `''` 后透传，`ai/secure-vault.js:197` 仅在非空字符串时写 Key。⇒ 生产路径与文档、测试注释描述一致，按评审建议改写会让文档失真。
+
+### 打包出件（1.0.5）
+- `package.json` 版本 1.0.4 → 1.0.5；`npm run electron:build` → `dist\特教安全教育资源仪 Setup 1.0.5.exe` **169.2MB**（版本资源 FileVersion / ProductVersion = 1.0.5），`dist\latest.yml` version 1.0.5。
+- 产物自检（asar 原文检索）：含「模型 / 推理接入点 ID」（设置页新节）、「清除已保存的 API Key」、「icon-button--labeled」（助手头部「配置」文字按钮）；上一批的 `getPublicKeyFingerprint` 仍在；包内公钥指纹 `165B8EEC45416A27` 未变（激活码代际不受影响）。
+- 打包按 electron-builder 惯例清掉了旧的 `Setup 1.0.4.exe` 与旧 `latest.yml`。
+- 用户指示口径：2026-10-14「出包并提交」——本轮交付含提交动作。
+
+## §6 验证与收口（父代理）

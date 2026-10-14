@@ -2,7 +2,7 @@
   <div class="settings-container">
     <div class="settings-header">
       <h2>⚙️ 应用设置</h2>
-      <p class="settings-desc">自定义应用外观和标题</p>
+      <p class="settings-desc">自定义应用外观、标题与小助手配置</p>
     </div>
 
     <div class="settings-content">
@@ -113,6 +113,54 @@
           </div>
         </div>
 
+        <!-- 儿童安全小助手 -->
+        <div class="form-section">
+          <h3 class="section-title">🤖 儿童安全小助手</h3>
+          <div class="form-group">
+            <label>模型 / 推理接入点 ID</label>
+            <input
+              v-model="assistant.modelId"
+              type="text"
+              class="form-input"
+              placeholder="例如 ep-2025… 或 deepseek-v4-flash-ga-260731"
+            />
+            <p class="hint">
+              火山方舟的模型 / 推理接入点 ID（服务地址由应用固定）；改完下一条消息即生效，无需重启。
+            </p>
+          </div>
+          <div class="form-group">
+            <label>API Key</label>
+            <div class="assistant-key-row">
+              <span
+                class="key-status"
+                :class="assistant.hasApiKey ? 'ok' : 'none'"
+              >
+                {{ assistant.hasApiKey ? "已配置" : "未配置" }}
+              </span>
+              <button
+                class="clear-key-btn"
+                :disabled="!assistant.hasApiKey || clearingKey"
+                @click="clearAssistantKey"
+              >
+                清除已保存的 API Key
+              </button>
+            </div>
+            <p class="hint">
+              Key 只保存在本机安全存储中，此处不回显；如需更换，请到小助手面板重新填写。
+              <span v-if="assistant.secureStorageUnavailable" class="key-warn">
+                当前系统安全存储不可用，Key 无法持久保存。
+              </span>
+            </p>
+          </div>
+          <div
+            v-if="assistant.message"
+            class="assistant-message"
+            :class="assistant.success ? 'success' : 'error'"
+          >
+            {{ assistant.message }}
+          </div>
+        </div>
+
         <!-- 操作按钮 -->
         <div class="form-actions">
           <button class="save-btn" @click="saveSettings" :disabled="saving">
@@ -158,6 +206,56 @@ const saving = ref(false);
 const saveMessage = ref("");
 const saveSuccess = ref(false);
 
+// 儿童安全小助手：模型可改，API Key 只看状态与清除（不回显）
+const assistant = ref({
+  modelId: "",
+  hasApiKey: false,
+  secureStorageUnavailable: false,
+  message: "",
+  success: true,
+});
+const clearingKey = ref(false);
+
+// 加载小助手状态（模型接入点 + Key 是否已配置）
+const loadAssistantStatus = async () => {
+  try {
+    const status = await window.electronAPI.childSafetyAssistant.getStatus();
+    assistant.value.modelId = status?.modelId || "";
+    assistant.value.hasApiKey = !!status?.hasApiKey;
+    assistant.value.secureStorageUnavailable = status?.secureStorageAvailable === false;
+  } catch (error) {
+    console.error("加载小助手状态失败:", error);
+  }
+};
+
+// 清除已保存的 API Key（二次确认）
+const clearAssistantKey = async () => {
+  if (
+    !window.confirm("清除本机保存的 API Key？清除后需重新配置才能使用小助手。")
+  ) {
+    return;
+  }
+  clearingKey.value = true;
+  assistant.value.message = "";
+  try {
+    const result = await window.electronAPI.childSafetyAssistant.clearApiKey();
+    if (!result?.success) {
+      assistant.value.success = false;
+      assistant.value.message =
+        result?.error?.message || "无法清除 API Key";
+      return;
+    }
+    assistant.value.hasApiKey = !!result.hasApiKey;
+    assistant.value.success = true;
+    assistant.value.message = "✅ API Key 已清除";
+  } catch (error) {
+    assistant.value.success = false;
+    assistant.value.message = error?.message || "无法清除 API Key";
+  } finally {
+    clearingKey.value = false;
+  }
+};
+
 // 验证密码
 const verifyPassword = async () => {
   passwordError.value = "";
@@ -172,6 +270,7 @@ const verifyPassword = async () => {
     if (result.success) {
       isAuthenticated.value = true;
       loadConfig();
+      loadAssistantStatus();
     } else {
       passwordError.value = "密码错误，请重试";
       password.value = "";
@@ -262,8 +361,17 @@ const resetLogo = async () => {
 const saveSettings = async () => {
   saving.value = true;
   saveMessage.value = "";
+  assistant.value.message = "";
 
   try {
+    // 小助手模型先做非空前置校验，避免应用配置已写、小助手配置没写
+    const modelId = assistant.value.modelId.trim();
+    if (!modelId) {
+      saveSuccess.value = false;
+      saveMessage.value = "保存失败：请填写小助手的模型 / 推理接入点 ID";
+      return;
+    }
+
     // 创建纯对象，避免传递 ref 或 proxy 对象
     const config = {
       appTitle: formData.value.appTitle,
@@ -276,18 +384,36 @@ const saveSettings = async () => {
 
     const result = await window.electronAPI.updateAppConfig(config);
 
-    if (result.success) {
-      saveSuccess.value = true;
-      saveMessage.value = "✅ 设置已保存，正在刷新...";
-
-      // 通知父组件更新
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } else {
+    if (!result.success) {
       saveSuccess.value = false;
       saveMessage.value = "保存失败：" + result.message;
+      return;
     }
+
+    // 小助手只提交模型（不传 apiKey ⇒ 主进程保留原 Key）
+    const assistantResult =
+      await window.electronAPI.childSafetyAssistant.saveConfig({ modelId });
+
+    if (!assistantResult?.success) {
+      saveSuccess.value = false;
+      saveMessage.value =
+        "保存失败：" + (assistantResult?.error?.message || "小助手配置未保存");
+      return;
+    }
+
+    assistant.value.hasApiKey = !!assistantResult.hasApiKey;
+    if (!assistant.value.hasApiKey) {
+      assistant.value.success = false;
+      assistant.value.message = "⚠️ 小助手尚未配置 API Key，使用前请先填写";
+    }
+
+    saveSuccess.value = true;
+    saveMessage.value = "✅ 设置已保存，正在刷新...";
+
+    // 通知父组件更新
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   } catch (error) {
     saveSuccess.value = false;
     saveMessage.value = "保存失败：" + error.message;
@@ -470,6 +596,82 @@ onMounted(() => {
   font-size: 13px;
   color: #999;
   margin-top: 8px;
+}
+
+/* 儿童安全小助手配置 */
+.assistant-key-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.key-status {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #f0f0f0;
+  color: #666;
+}
+
+.key-status.ok {
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.key-status.none {
+  background: #fff7e6;
+  color: #d46b08;
+  border: 1px solid #ffd591;
+}
+
+.clear-key-btn {
+  padding: 8px 14px;
+  border: 2px solid #ffa39e;
+  border-radius: 8px;
+  background: white;
+  color: #f5222d;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clear-key-btn:hover:not(:disabled) {
+  background: #fff1f0;
+}
+
+.clear-key-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #e0e0e0;
+  color: #999;
+}
+
+.key-warn {
+  color: #d46b08;
+}
+
+.assistant-message {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.assistant-message.success {
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.assistant-message.error {
+  background: #fff1f0;
+  color: #f5222d;
+  border: 1px solid #ffa39e;
 }
 
 /* Logo预览 */
