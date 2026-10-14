@@ -97,6 +97,7 @@
     flex-shrink: 0;
   }
   .key-loaded .fingerprint { font-family: var(--mono); font-size: 13px; color: #1E7E46; }
+  .fp-hint { margin-top: 8px; font-size: 12.5px; color: #1E7E46; line-height: 1.7; }
   .key-loaded .actions { margin-left: auto; display: flex; gap: 8px; }
   .btn {
     border: none;
@@ -184,7 +185,7 @@
     text-align: left;
     border-bottom: 1px solid var(--border);
   }
-  .history-table th { color: var(--text-light); font-weight: 500; font-size: 12px; }
+  .history-table th { color: var(--text-light); font-weight: 500; font-size: 12px; white-space: nowrap; }
   .history-table .h-key { font-family: var(--mono); font-size: 12px; word-break: break-all; }
   .history-table .h-action { white-space: nowrap; }
   .empty-tip { color: var(--text-light); font-size: 13px; text-align: center; padding: 18px 0; }
@@ -245,6 +246,9 @@
         <button class="btn btn-ghost" id="btnPasteKey">粘贴私钥</button>
         <button class="btn btn-outline" id="btnClearKey">移除</button>
       </span>
+    </div>
+    <div class="fp-hint" id="fpHint" style="display:none">
+      ✅ 请核对：该指纹须与客户端激活页显示的「本版本签发公钥指纹」完全一致——不一致说明密钥代际不匹配，签出的激活码会被客户端拒收。
     </div>
     <div style="margin-top:10px; display:none" id="pasteArea">
       <textarea id="pasteKeyText" placeholder="粘贴 PEM 格式私钥内容（-----BEGIN PRIVATE KEY----- ... -----END PRIVATE KEY-----）"></textarea>
@@ -320,7 +324,7 @@
     <b>⚠️ 安全提示：</b><br>
     ① 所有操作均在您本机的浏览器内完成，<b>不会上传任何数据</b>，关闭页面后私钥即从内存清除；<br>
     ② <b>私钥（private.pem）务必妥善保管</b>：丢失或泄露可导致激活码被冒签，若泄露请立即轮换密钥（重新生成密钥对并重新打包客户端公钥）；<br>
-    ③ 已激活用户不受密钥轮换影响，但<b>旧激活码在新公钥下无法重新激活</b>，请保留本工具与密钥副本；<br>
+    ③ <b>旧激活码在新装机器上无法激活</b>（已激活的机器不受影响：本地激活记录不再验签，只校验机器码与有效期）；轮换后务必同步更换本工具与密钥副本，<b>签码前先核对上方的「签发公钥指纹」与客户端激活页显示的一致</b>；<br>
     ④ 建议使用 Chrome / Edge 浏览器打开本工具。
   </div>
 
@@ -341,6 +345,7 @@
   const keyFile = document.getElementById('keyFile');
   const keyLoaded = document.getElementById('keyLoaded');
   const keyFingerprint = document.getElementById('keyFingerprint');
+  const fpHint = document.getElementById('fpHint');
   const pasteArea = document.getElementById('pasteArea');
   const pasteKeyText = document.getElementById('pasteKeyText');
   const typeOptions = Array.from(document.querySelectorAll('.type-option'));
@@ -362,7 +367,7 @@
 
   // ========== 状态 ==========
   let privateKey = null;   // CryptoKey
-  let privateFingerprint = ''; // 指纹（后 8 位）
+  let publicKeyFingerprint = ''; // 签发公钥指纹（SHA-256(SPKI) 前 16 位十六进制大写）
   let currentLicense = null;   // { key, meta }
   let history = [];
 
@@ -408,6 +413,74 @@
     return der;
   }
 
+  // ===== BEGIN 公钥指纹算法（tests/activation-keys.test.js 抽取本段执行，校验与 Node 的 SPKI 导出逐字节一致）=====
+  // 浏览器只有 PKCS#8 私钥，WebCrypto 不提供「由私钥导公钥」，所以做最小 DER 解析：
+  // PKCS#8 → RSAPrivateKey 的模数 n、公钥指数 e → 重建 SPKI 公钥 DER，再 SHA-256 得「签发公钥指纹」。
+  function derReadTLV(buf, pos) {
+    const tag = buf[pos];
+    let len = buf[pos + 1];
+    let lenBytes = 2;
+    if (len & 0x80) {
+      const n = len & 0x7f;
+      len = 0;
+      for (let i = 0; i < n; i++) len = (len << 8) | buf[pos + 2 + i];
+      lenBytes = 2 + n;
+    }
+    const start = pos + lenBytes;
+    return { tag: tag, start: start, end: start + len };
+  }
+
+  function derEncodeLength(len) {
+    if (len < 0x80) return [len];
+    const bytes = [];
+    let n = len;
+    while (n > 0) { bytes.unshift(n & 0xff); n = n >>> 8; }
+    return [0x80 | bytes.length].concat(bytes);
+  }
+
+  function derTLV(tag, content) {
+    return [tag].concat(derEncodeLength(content.length), content);
+  }
+
+  function derConcat(arrays) {
+    const out = [];
+    arrays.forEach(function (a) { for (let i = 0; i < a.length; i++) out.push(a[i]); });
+    return out;
+  }
+
+  // DER INTEGER：去掉多余的 0x00 前缀；首字节高位为 1 时补 0x00（表示正数）
+  function derInteger(bytes) {
+    let i = 0;
+    while (i < bytes.length - 1 && bytes[i] === 0) i++;
+    const body = bytes.slice(i);
+    return derTLV(0x02, (body[0] & 0x80) ? [0].concat(body) : body);
+  }
+
+  function derivePublicSpkiFromPkcs8(der) {
+    const outer = derReadTLV(der, 0);                  // PrivateKeyInfo SEQUENCE
+    const version = derReadTLV(der, outer.start);      // version
+    const algorithm = derReadTLV(der, version.end);    // AlgorithmIdentifier
+    const privateKey = derReadTLV(der, algorithm.end); // OCTET STRING（内含 RSAPrivateKey）
+    const rsa = derReadTLV(der, privateKey.start);     // RSAPrivateKey SEQUENCE
+    const rsaVersion = derReadTLV(der, rsa.start);     // version
+    const modulus = derReadTLV(der, rsaVersion.end);   // modulus n
+    const exponent = derReadTLV(der, modulus.end);     // publicExponent e
+    const rsaPublicKey = derTLV(0x30, derConcat([
+      derInteger(Array.prototype.slice.call(der, modulus.start, modulus.end)),
+      derInteger(Array.prototype.slice.call(der, exponent.start, exponent.end))
+    ]));
+    const algorithmIdentifier = derTLV(0x30, derConcat([
+      derTLV(0x06, [0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01]), // OID 1.2.840.113549.1.1.1
+      derTLV(0x05, [])                                                       // NULL
+    ]));
+    // BIT STRING：首字节 0x00 表示无未使用位
+    return new Uint8Array(derTLV(0x30, derConcat([
+      algorithmIdentifier,
+      derTLV(0x03, [0x00].concat(rsaPublicKey))
+    ])));
+  }
+  // ===== END 公钥指纹算法 =====
+
   // ========== 私钥加载 ==========
   async function loadKeyFromText(pemText) {
     const pem = String(pemText || '').trim();
@@ -421,12 +494,15 @@
       { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
       false, ['sign']
     );
-    // 计算指纹：SHA-256(私钥 DER) 后 8 位
-    const digest = await crypto.subtle.digest('SHA-256', der);
+    // 计算「签发公钥指纹」：SHA-256(SPKI 公钥 DER) 前 16 位，与客户端 getPublicKeyFingerprint 同一算法
+    const spki = derivePublicSpkiFromPkcs8(der);
+    const digest = await crypto.subtle.digest('SHA-256', spki);
     const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
     privateKey = key;
-    privateFingerprint = hex.slice(-8).toUpperCase();
-    keyFingerprint.textContent = '指纹 ' + privateFingerprint;
+    publicKeyFingerprint = hex.slice(0, 16).toUpperCase();
+    keyFingerprint.textContent = '签发公钥指纹 ' + publicKeyFingerprint;
+    fpHint.style.display = 'block';
+    updateGenerateState(); // 私钥就绪后按钮立即可用（否则要等用户再动一次类型/输入才刷新状态）
     keyLoaded.style.display = 'flex';
     dropZone.style.display = 'none';
     pasteArea.style.display = 'none';
@@ -435,8 +511,10 @@
 
   function clearKey() {
     privateKey = null;
-    privateFingerprint = '';
+    publicKeyFingerprint = '';
     keyLoaded.style.display = 'none';
+    fpHint.style.display = 'none';
+    updateGenerateState();
     dropZone.style.display = 'block';
     keyFile.value = '';
     pasteKeyText.value = '';

@@ -109,79 +109,115 @@ function unformatLicenseKey(formattedKey) {
 }
 
 /**
+ * 签发公钥指纹 = SHA-256(公钥 SPKI DER) 前 16 位十六进制（大写）
+ *
+ * 生成器页面按同一算法显示「签发公钥指纹」，两处一致才说明双方是同一代密钥。
+ * 手工复核：openssl pkey -pubin -in public-key.pem -outform DER | openssl dgst -sha256（取前 16 位）
+ */
+function getPublicKeyFingerprint() {
+    try {
+        const der = crypto.createPublicKey(loadPublicKey()).export({ type: 'spki', format: 'der' });
+        return crypto.createHash('sha256').update(der).digest('hex').slice(0, 16).toUpperCase();
+    } catch (error) {
+        console.error('计算公钥指纹失败:', error.message);
+        return '';
+    }
+}
+
+// 签名长度为固定的 RSA-2048 输出
+const SIGNATURE_LENGTH = 256;
+const FORMAT_ERROR_MESSAGE = '激活码格式不正确或已损坏，请确认已完整复制（含 SPED- 前缀）';
+
+/**
  * 使用RSA公钥验证激活码
+ * @returns {{ok: true, data: Object} | {ok: false, reason: 'environment'|'format'|'signature', message: string}}
  */
 function decryptLicenseKey(licenseKey) {
+    let publicKey;
     try {
-        const publicKey = loadPublicKey();
+        publicKey = loadPublicKey();
+    } catch (error) {
+        console.error('加载公钥失败:', error.message);
+        return { ok: false, reason: 'environment', message: '本机公钥文件缺失或不可读，无法验证激活码' };
+    }
 
-        // 反格式化激活码
-        const base64Data = unformatLicenseKey(licenseKey);
-        console.log('Base64数据长度:', base64Data.length);
+    // 反格式化激活码
+    const base64Data = unformatLicenseKey(String(licenseKey || ''));
+    console.log('Base64数据长度:', base64Data.length);
 
-        // Base64解码
-        const combined = Buffer.from(base64Data, 'base64');
-        console.log('解码后总长度:', combined.length);
+    // Base64解码
+    const combined = Buffer.from(base64Data, 'base64');
+    console.log('解码后总长度:', combined.length);
 
-        // 读取前4字节：数据长度
-        if (combined.length < 4) {
-            throw new Error('激活码格式错误：长度不足');
-        }
+    // 结构：4 字节数据长度 + 数据 + 256 字节签名
+    if (combined.length < 4 + SIGNATURE_LENGTH) {
+        console.error('激活码长度不足:', combined.length);
+        return { ok: false, reason: 'format', message: FORMAT_ERROR_MESSAGE };
+    }
 
-        const dataLength = combined.readUInt32BE(0);
-        console.log('数据长度:', dataLength);
+    const dataLength = combined.readUInt32BE(0);
+    const dataEnd = 4 + dataLength;
+    console.log('数据长度:', dataLength);
 
-        // 分离数据和签名
-        const dataStart = 4;
-        const dataEnd = dataStart + dataLength;
-        const signatureStart = dataEnd;
+    if (dataLength <= 0 || combined.length - dataEnd !== SIGNATURE_LENGTH) {
+        console.error('激活码结构不完整，数据段与签名段长度不匹配');
+        return { ok: false, reason: 'format', message: FORMAT_ERROR_MESSAGE };
+    }
 
-        if (combined.length < signatureStart) {
-            throw new Error('激活码格式错误：数据不完整');
-        }
+    const dataBuffer = combined.slice(4, dataEnd);
+    const signature = combined.slice(dataEnd);
 
-        const dataBuffer = combined.slice(dataStart, dataEnd);
-        const signature = combined.slice(signatureStart);
+    console.log('数据实际长度:', dataBuffer.length);
+    console.log('签名长度:', signature.length);
 
-        console.log('数据实际长度:', dataBuffer.length);
-        console.log('签名长度:', signature.length);
+    // 验证RSA签名
+    const isValid = crypto.verify(
+        'sha256',
+        dataBuffer,
+        {
+            key: publicKey,
+            padding: crypto.constants.RSA_PKCS1_PADDING
+        },
+        signature
+    );
 
-        // 验证RSA签名
-        const isValid = crypto.verify(
-            'sha256',
-            dataBuffer,
-            {
-                key: publicKey,
-                padding: crypto.constants.RSA_PKCS1_PADDING
-            },
-            signature
-        );
-
-        if (!isValid) {
-            throw new Error('激活码签名验证失败');
-        }
-
-        console.log('✅ 签名验证成功');
-
-        // 解析JSON数据
-        const jsonData = dataBuffer.toString('utf8');
-        console.log('原始数据:', jsonData);
-
-        const parsed = JSON.parse(jsonData);
-
-        // 将缩短字段转换回完整字段
+    if (!isValid) {
+        // 同一条激活码由不同代密钥签发时必然走到这里：提示指纹，现场可直接对表
+        const fingerprint = getPublicKeyFingerprint();
+        console.error('激活码签名验证失败：签发密钥与本版本不匹配（本版本签发公钥指纹 ' + (fingerprint || '未知') + '）');
         return {
+            ok: false,
+            reason: 'signature',
+            message: `激活码签名校验失败：该码由不匹配的密钥签发（本版本签发公钥指纹 ${fingerprint || '未知'}），请用配套密钥的生成器重新签发`
+        };
+    }
+
+    console.log('✅ 签名验证成功');
+
+    // 解析JSON数据
+    const jsonData = dataBuffer.toString('utf8');
+    console.log('原始数据:', jsonData);
+
+    let parsed;
+    try {
+        parsed = JSON.parse(jsonData);
+    } catch (error) {
+        console.error('激活码载荷解析失败:', error.message);
+        return { ok: false, reason: 'format', message: FORMAT_ERROR_MESSAGE };
+    }
+
+    // 将缩短字段转换回完整字段
+    return {
+        ok: true,
+        data: {
             type: parsed.t,
             version: parsed.v,
             machineId: parsed.m,
             createdAt: parsed.c,
             expireAt: parsed.e,
             permanent: parsed.p || false
-        };
-    } catch (error) {
-        console.error('解密激活码失败:', error.message);
-        return null;
-    }
+        }
+    };
 }
 
 // ============ 本地存储加密 ============
@@ -236,11 +272,12 @@ function decryptActivationData(encryptedObj) {
  * 验证激活码
  */
 function verifyLicenseKey(licenseKey) {
-    // 解密激活码
-    const licenseData = decryptLicenseKey(licenseKey);
-    if (!licenseData) {
-        return { success: false, message: '激活码无效或已损坏' };
+    // 解密激活码（失败区分「格式损坏」与「签名代际不匹配」，便于现场定位）
+    const decoded = decryptLicenseKey(licenseKey);
+    if (!decoded.ok) {
+        return { success: false, message: decoded.message, reason: decoded.reason };
     }
+    const licenseData = decoded.data;
 
     // 获取当前机器码
     const currentMachineId = getMachineFingerprint();
@@ -287,9 +324,19 @@ function verifyLicenseKey(licenseKey) {
 }
 
 /**
- * 获取当前激活状态
+ * 获取当前激活状态（附本版本签发公钥指纹，供激活页做密钥代际核对）
  */
 function getActivationStatus() {
+    return {
+        ...computeActivationStatus(),
+        publicKeyFingerprint: getPublicKeyFingerprint()
+    };
+}
+
+/**
+ * 计算激活状态（不含公钥指纹）
+ */
+function computeActivationStatus() {
     // 检查是否有激活记录
     const encrypted = licenseStore.get('activation');
     if (!encrypted) {
@@ -407,6 +454,7 @@ function resetActivation() {
 // ============ 导出 ============
 module.exports = {
     getMachineFingerprint,
+    getPublicKeyFingerprint,
     verifyLicenseKey,
     getActivationStatus,
     resetActivation

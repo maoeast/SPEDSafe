@@ -78,6 +78,8 @@ npm run pack:license-generator  # 打包激活码生成器分发包
 
 RSA-2048 签名 + AES-256 本地加密存储。流程：机器指纹（node-machine-id）→ 管理员生成激活码（`SPED-XXXX-...`，用 `.keys/private.pem`）→ 客户端 `public-key.pem` 验证。7 天试用期，试用期后可跳过，过期强制激活；未打包开发环境可走测试模式。生成工具：`generate-license.js`（Node）、`license_generator_gui.py` / `license_generator_cli.py`（Python）、`license-generator-dist/`（分发包）。完整指南见 `LICENSE_GENERATOR_GUIDE.md`。
 
+**密钥代际核对**：客户端激活页与生成器页面各显示「签发公钥指纹」= `SHA-256(公钥 SPKI DER)` 前 16 位大写（`license-manager.js` 的 `getPublicKeyFingerprint`）；两处对不上就是密钥代际不匹配，签出的码必被拒收。轮换密钥后必须重新打包生成器并替换实施人员手上的副本，仓库侧漏改由 `tests/activation-keys.test.js` 拦住。
+
 ## 关键路径
 
 - `main.js` — 主进程入口（窗口、协议、HTTP 服务器、IPC、store）
@@ -87,8 +89,9 @@ RSA-2048 签名 + AES-256 本地加密存储。流程：机器指纹（node-mach
 - `src/resources.json` — 资源清单（295 条）
 - `src/assets/covers/` — 封面缩略图；`src/assets/vdat/`（视频，git 忽略）、`src/assets/h5dat/`（H5 课件，git 忽略）
 - `ai/` — 小助手主进程模块（ipc / assistant-service / session-service / secure-vault / ark-client / p0-safety / child-safety-prompt）
-- `license-manager.js` — 激活验证
+- `license-manager.js` — 激活验证（含 `getPublicKeyFingerprint` 密钥代际核对）
 - `tests/child-safety-assistant.test.js` — AI 模块测试（依赖注入 mock fetch / safeStorage / store）
+- `tests/activation-keys.test.js` — 激活密钥代际核对测试（页面指纹算法 ↔ Node SPKI、`.keys` ↔ `public-key.pem` 配对、分发件同代）
 - `docs/planning/2026-07-23-child-safety-assistant-plan.md` — 小助手设计文档（已实施）
 
 ## 构建

@@ -69,7 +69,10 @@ SPEDSafe/
 │       ├── AppSettings.vue          # 应用设置（自定义配置）
 │       ├── ActivationDialog.vue     # 激活对话框
 │       └── ChildSafetyAssistant.vue # 小助手右侧工作区
-├── tests/child-safety-assistant.test.js  # Node 测试（11 项）
+├── tests/                   # Node 测试（node --test）
+│   ├── child-safety-assistant.test.js  # 小助手模块
+│   ├── license-generator.test.js       # 激活码生成/导入链路
+│   └── activation-keys.test.js         # 激活密钥代际核对
 ├── docs/planning/           # 设计方案存档（如儿童安全小助手实施文档）
 ├── installer/               # 资源安装器（NSIS 脚本与生成工具）
 ├── license-generator-dist/  # 激活码生成器分发包（含 README）
@@ -238,5 +241,6 @@ npm test
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.0.4 | 2026-10 | 激活密钥代际核对：生成器页面与激活页各显示「签发公钥指纹」（可对表）、激活失败文案区分签名代际不匹配与格式损坏、新增配对与分发件回归测试 |
 | v1.0.3 | 2026-07 | 资源入库（221 → 295 个）；新增儿童安全小助手（AI 模块 + 窄 Preload + 加密会话）；项目冗余清理 |
 | v1.0.0 | 2025-11-24 | 首个正式版本：资源播放、学习中心、激活系统、应用配置系统 |

@@ -30,6 +30,11 @@
             </button>
           </div>
           <p class="section-hint">💡 激活码会绑定此机器码，请妥善保存</p>
+          <p class="section-hint fingerprint-hint" v-if="publicKeyFingerprint">
+            🔑 本版本签发公钥指纹：
+            <span class="fingerprint-value">{{ publicKeyFingerprint }}</span>
+            <br />若报「激活码签名校验失败」，请与生成器页面显示的「签发公钥指纹」核对：不一致说明签发密钥与本版本不匹配，需换用配套密钥的生成器重新签发
+          </p>
         </div>
 
         <!-- 激活码输入 -->
@@ -168,6 +173,11 @@ const statusTitle = computed(() => {
 const statusDesc = computed(() => {
   return props.activationStatus.message || "请输入激活码以继续使用";
 });
+
+// 本版本签发公钥指纹（license-manager.getPublicKeyFingerprint）：用于与生成器页面显示的指纹对表
+const publicKeyFingerprint = computed(
+  () => props.activationStatus.publicKeyFingerprint || ""
+);
 
 const showTrialInfo = computed(() => {
   return (
@@ -556,6 +566,18 @@ defineExpose({
   font-size: 13px;
   color: #999;
   margin: 8px 0 0 0;
+}
+
+/* 密钥代际核对：本版本签发公钥指纹 */
+.fingerprint-hint {
+  word-break: break-all;
+}
+
+.fingerprint-value {
+  font-family: Consolas, "Courier New", monospace;
+  font-weight: 600;
+  color: #667eea;
+  letter-spacing: 0.5px;
 }
 
 /* 导入激活文件按钮 */
