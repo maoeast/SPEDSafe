@@ -3,7 +3,7 @@
 > 编制：主 agent · 2026-10-14 · 来源 = 用户 2026-10-14 提问「AI 助手内置模型名是不是写死了、配置后没地方改」；查明模型只是默认常量、唯一入口藏在助手浮层图标里；用户选择「A+B 一起做」。
 > 台账 = #2（儿童安全小助手 · 归批）。前情 = 无（独立批）。
 ## §1 讨论（主 agent）
-**状态行**：🔄 进行中（…）
+**状态行**：已收口 2026-10-14
 <§1 模板占位：本批条目 / 关键判据 / 授权口径>
 
 - 起因（2026-10-14）：用户问「AI 助手内置的模型名是不是写死了，配置之后没有地方修改」。
@@ -32,8 +32,55 @@
 - 上抛项：是否随本批出 1.0.5 安装包以到现场 —— 用户答复「交付时再定」，交付时再问。
 - 最近先例：同批前例 `docs/batches/2026-10-14-activation-key-generation-guard.md`（同一 UI 层次：激活页/生成器页加提示行，沿用既有样式类与既有点击处理，不新增通道）；应用设置节的先例＝本文件既有三节（`AppSettings.vue:32/67/93`：`.form-section` + `.section-title` + `.form-group` + `.hint`），本批第 4 节沿用同一形状。偏离：新增了一个「只读状态 + 危险操作（清除 Key）」组合，既有三节没有这种形态——理由是 Key 不能回显，只能用状态 + 清除表达。
 
+### 收口归一化（2026-10-14）
+
+| # | 改动 | 来源 | 落地坐标 | 文档归口 |
+|---|---|---|---|---|
+| 1 | 应用设置新增「🤖 儿童安全小助手」节：模型 / 推理接入点 ID 输入（回填当前值）、API Key 状态胶囊、清除 Key（二次确认）、两行说明；`loadAssistantStatus()` / `clearAssistantKey()`；`saveSettings()` 改为「非空前置校验 → 存应用配置 → **只传 modelId** → 未配 Key 时提示」；`settings-desc` 文案与样式 | 用户选择 A | `src/components/AppSettings.vue:5`、`:116-163`、`:209-256`、`:273`、`:361-419`、`:601-676` | README「使用」第 2 条（入口指清，`README.md:222`）；`AGENTS.md:71` 补「覆盖入口」一句 |
+| 2 | 助手头部配置入口由「仅图标」改为「图标 + 文字『配置』」（新增 `icon-button--labeled`） | 用户选择 B | `src/components/ChildSafetyAssistant.vue:14-17`、`:663-673` | 同上一行两处；用户手册仍走「去配置」通路（见下） |
+| 3 | 回归断言 4 组（只改模型不动 Key ×2、非法模型被拒、被拒后配置不损坏） | 防「误清 Key」 | `tests/child-safety-assistant.test.js:219-247` | 测试文件内注释；本档 §5 |
+| 4 | 版本 1.0.4 → 1.0.5 + NSIS 安装包 | 用户「出包并提交」 | `package.json:3`；`dist\特教安全教育资源仪 Setup 1.0.5.exe`（169.2MB） | README 版本历史补 v1.0.5 行（`README.md:244`） |
+| 5 | 提交 `5485065` + 推送 origin/main | 用户「提交」「推送」 | git：`5485065` = 远端 `refs/heads/main` | 无需文档面 |
+
+**文档 ↔ 实现一致性核对结论**：
+- README「使用」节原写「设置中填入火山方舟 API Key」未指清位置 ⇒ 已改为两条入口分述（应用设置节 / 助手面板「配置」）。
+- `AGENTS.md` 原写「界面自动预填、用户可覆盖」但没说在哪里覆盖 ⇒ 已补两处入口。
+- `docs/user-manual.md` 覆盖小助手配置流程（7.3「去配置」→ 填 Key）：该通路未变，手册描述仍成立；本次新增的**管理员入口**（应用设置节）手册未提——属新增能力、非矛盾 ⇒ 记入 §6 遗留交用户决定（手册 `:3` 仍写「适用版本：1.0.3」，与上一批同一件事：Word/PDF 交付件未重生成）。
+- 单一来源核对：小助手配置机制的唯一权威描述仍在 `docs/planning/2026-07-23-child-safety-assistant-plan.md`（4.1 固定配置：渲染层只可提交 API Key 与模型 ID、主进程做长度与白名单校验）；本批只加 UI 入口，机制未变，故该文档不动。
+
+### 评审整改（round 1 发现项处置 · 2026-10-14）
+
+**① 最近先例（规范行 · 补 🔴）**
+- 先例坐标（实现 ∥ 设计档 ∥ 批次）：`src/components/AppSettings.vue` 既有三节——`:32` 应用标题 / `:67` 应用Logo / `:93` 顶部背景，形状 = `.form-section` + `.section-title` + `.form-group` + `.hint` ∥ 该页无独立设计档，其形态约定见 `docs/handoff/2026-08-13-user-manual.md`「界面专有名词与 UI 一致」∥ 本仓最近批次 `docs/batches/2026-10-14-activation-key-generation-guard.md`（同属「加提示行、沿用既有样式类、不新增通道」的 UI 批次）。
+- 对齐：第 4 节沿用同形状与同类名；保存沿用同页既有单按钮 `saveSettings` 与 `save-message` 提示位；状态数据取自既有窄 API `childSafetyAssistant.getStatus()`，不新增 IPC 通道。
+- 有意偏离（显式命名先例 + 说明既有形态为何不适用）：新增「只读状态胶囊（已配置 / 未配置）+ 危险操作（清除 API Key）」组合——既有三节全是「可写输入 + 保存」，**没有**「不可回显的密文 + 清除」形态；偏离理由＝API Key 的安全约束（`docs/planning/2026-07-23-child-safety-assistant-plan.md` 4.1「窄边界」：渲染层永远读不到明文 Key），该字段只能用「状态 + 清除」表达，不能照抄输入框形态。
+- 无先例声明：本仓库无「组件分拆」先例（一页一组件、节内联是既有惯例），故本批不做分拆（见下 ②）。
+
+**② 受影响文件规模对账与处置（补 🔴）**
+- 实测（vs 本批基线 `701f7d6`）：`src/components/AppSettings.vue` 607 行 → **810 行（+212 / −10）**；§2 原预估「+85」偏低，低估项＝新增样式块（约 76 行）、`saveSettings` 重排（约 +40）、状态与清除逻辑（约 +50）、模板节（约 +48）逐项叠加。`ChildSafetyAssistant.vue` 1368 → **1380 行（+13 / −1）**；`tests/child-safety-assistant.test.js` 435 → **464 行（+29）**。
+- 越线处置（**明确接受并附理由**）：810 行确实越过「可分拆审视」尺度，但**同尺度组件在本项目是常态**（实测 `ChildSafetyAssistant.vue` 1380 行、`LearningDashboard.vue` 744 行、`ActivationDialog.vue` 727 行），而本批拆分会把「新增一节」升级成跨文件重构、扩大回归面；故**选择保持现状**，并把分拆作为独立技术债登记：台账新增技术待办（标题「AppSettings.vue 810 行：四节可拆为子组件」，触发＝认账不排期）。
+
 ## §3 设计评审（评审子代理）
+
+### 轮次 1（评审子代理）
+
+| # | Category | Severity | Issue | Suggestion |
+|---|----------|----------|-------|------------|
+| 1 | Affected-file size annotations | 🔴 | The design document states "src/components/AppSettings.vue（607 行 → 预计 +85）" at line docs/batches/2026-10-14-assistant-config-entry.md:29. Implementation record states the file now has 810 lines (line docs/batches/2026-10-14-assistant-config-entry.md:68 coordinates cite `:601-676` as new styles, and grep result shows total 810 lines). Actual delta = 810 - 607 = +203 lines, exceeding the estimated +85 by +118 lines. The design did not anticipate this magnitude and did not flag the file crossing the >500-line proactive-split-review tier or provide a split plan. | Re-verify the current line count. If the file now exceeds 500 lines (it does: 810 lines), document the overage and either: (a) provide a split plan before implementation proceeds further, or (b) explicitly accept the structure as-is with a rationale (e.g., "split deferred to next refactor batch"). The design should have annotated this risk. |
+| 2 | Closest-precedent check | 🔴 | The design document contains no **closest-precedent line** (precedent coordinates + alignment ∥ deviation rationale). Line docs/batches/2026-10-14-assistant-config-entry.md:33 mentions "最近先例" as prose, listing `docs/batches/2026-10-14-activation-key-generation-guard.md` and existing sections in `AppSettings.vue`, but this is not structured as a formal precedent line with explicit deviation rationale where required. The design does state a deviation ("新增了一个「只读状态 + 危险操作（清除 Key）」组合，既有三节没有这种形态") and provides a reason ("理由是 Key 不能回显，只能用状态 + 清除表达"), but the format is embedded in prose rather than a dedicated precedent declaration line. | Add a formal **closest-precedent line** in the required format: precedent coordinates (implementation ∥ design-doc section ∥ batches) + alignment statement ∥ deviation rationale (explicit: names surveyed precedent + states why existing form does not apply). For this design: "Closest precedent = AppSettings.vue existing three sections (`:32/67/93` `.form-section` + `.section-title` + `.form-group`) ∥ Deviation: introduces read-only status indicator + destructive action (clear Key) combination not present in existing sections ∥ Rationale: API Key must not be echoed (security constraint), only status display + clear operation can express the state". |
+
+**Findings count**: 2 total — 2 🔴 Critical, 0 🟡 Advisory, 0 🔵 Note
+
+VERDICT: changes-required
+
 ## §4 用户批准（主 agent）
+
+**状态行**：✅ 已批准（2026-10-14 · 收口）
+
+- 用户原话：提问「AI助手有个问题，是不是内置的模型名称已经写死了，还有就是配置之后没有地方修改」→ 我给出 A/B/C/D 选项 → 用户选「A+B 一起做（我推荐）」；实现前用户原话「开始」批准设计；出件阶段原话「出包并提交」「推送」；收口原话「收口」。
+- 覆盖范围（**我方解读，非用户原话**）：§2 条目 1–5 全部落地，含 1.0.5 安装包出件、提交与推送。
+- 未获用户指令的两件事，明确不在本批：用户手册 Word/PDF 是否随 1.0.5 重出；「清除 API Key」在有 Key 机器上的补点（建议项，非批准项）。
+
 ## §5 实施记录（实施者：主 agent ∥ coder）
 
 **状态行**：实施完成
@@ -76,3 +123,23 @@
 - 用户指示口径：2026-10-14「出包并提交」——本轮交付含提交动作。
 
 ## §6 验证与收口（父代理）
+
+**状态行**：已收口（2026-10-14）
+
+### 验收测试行
+- 命令：`npm test`（`node --test tests/child-safety-assistant.test.js tests/license-generator.test.js tests/activation-keys.test.js`）
+- 结果：**30 tests / 30 pass / 0 fail / 0 skipped**（实施后两次一致）；`npm run build` 28 modules 无报错
+- 真机走查：真实 Electron 应用内 6 项全过（设置页新节渲染 / 默认模型回填 / 空模型拦截且不写入 / 保存后 store 往返一致 / 助手头部「配置」文字按钮）；截图证据见 §5
+- 产物核对：`dist\特教安全教育资源仪 Setup 1.0.5.exe`（169.2MB，版本资源 1.0.5）；asar 内含本批界面与上一批的指纹函数；**包内公钥指纹 `165B8EEC45416A27` 未变**（不影响已激活机器与已签发激活码）
+- 独立评审：代码评审 **pass**（1 🔵 已技术反驳留证）；收口设计评审 round 1 **changes-required**（2 🔴：规模预估失准未处置、先例未成规范行）→ 整改 → round 2 **pass**（2 🔴 全 Fixed，host 复核 7/7 引用与文件现状一致，无新发现）
+
+### 收口记录
+- 台账 #2（本批需求）→ 已核销。
+- 本批产出：功能 A（应用设置小助手节）+ B（助手入口加文字）、回归断言 4 组、安装包 1.0.5、提交 `5485065`（已推 `origin/main`）。
+- 台账新增技术待办 #3：`AppSettings.vue` 810 行、四节可拆子组件（触发＝认账不排期）——本批规模越线的处置载体。
+- 记录冻结：本档随 close 冻结，此后零改写；有改动另开新批。
+
+### 遗留 / 移交用户决定
+1. **用户手册未随 1.0.5 重出**：`docs/user-manual.md:3` 仍写「适用版本：1.0.3」；其覆盖的小助手配置流程走「去配置」通路（未变），本批新增的**管理员入口**（应用设置节）手册未提——Word/PDF 交付件是否重出由用户定。
+2. 「清除已保存的 API Key」未在有 Key 的机器上真机点过（本机 dev 无 Key，按钮为禁用态）；代码链与既有测试覆盖，建议现场点一次。
+3. 收口归一化产生的两处文档改动（`README.md` 版本历史 v1.0.5、`AGENTS.md` 配置入口一句）**尚未提交**——属对外动作，待用户确认后补一笔。
